@@ -6,7 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"securevault-cloudguard/backend/internal/auth"
 	"securevault-cloudguard/backend/internal/config"
+	"securevault-cloudguard/backend/internal/handlers"
+	"securevault-cloudguard/backend/internal/repository"
 )
 
 func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
@@ -33,6 +36,14 @@ func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
 			"database": "connected",
 		})
 	})
+
+	userRepo := repository.NewUserRepository(db)
+	authHandler := handlers.NewAuthHandler(userRepo, cfg.JWTSecret)
+
+	v1 := r.Group("/api/v1")
+	authRoutes := v1.Group("/auth")
+	authRoutes.POST("/login", authHandler.Login)
+	authRoutes.GET("/me", auth.AuthMiddleware(cfg.JWTSecret), authHandler.Me)
 
 	return r
 }
