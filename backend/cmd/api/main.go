@@ -5,12 +5,20 @@ import (
 	"log"
 
 	"securevault-cloudguard/backend/internal/config"
+	"securevault-cloudguard/backend/internal/database"
 	"securevault-cloudguard/backend/internal/router"
 )
 
 func main() {
 	cfg := config.Load()
-	r := router.SetupRouter(cfg)
+
+	db, err := database.Connect(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("database: %v", err)
+	}
+	defer db.Close()
+
+	r := router.SetupRouter(cfg, db)
 
 	addr := ":" + cfg.Port
 	fmt.Printf("SecureVault CloudGuard API listening on %s (env=%s)\n", addr, cfg.Environment)
