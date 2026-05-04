@@ -4,17 +4,27 @@ Cloud-native portfolio project oriented toward secrets access, RBAC, audit loggi
 
 ## Current status
 
-**Phase 3 — Authentication:** The Go API issues JWTs (HS256, 24-hour expiry) and exposes `POST /api/v1/auth/login` plus a JWT-protected `GET /api/v1/auth/me`, backed by demo users in PostgreSQL (bcrypt hashes). This is not a full product: there is no secret registry API, policy engine, dashboard UI, audit logging pipeline, risk scanner, CI/CD, or cloud deployment in the repo yet.
+**Phase 4 — RBAC middleware:** JWT auth from Phase 3 is unchanged. The API adds `RequireRoles` middleware and `/api/v1/rbac/*` test routes to verify admin, developer, and viewer access. There is still no secret registry API, policy engine, audit logging pipeline, risk scanner, frontend, CI/CD, or cloud deployment in this repo.
+
+## Role permission matrix (planned product shape)
+
+| Role | Intended access |
+|------|-----------------|
+| **Admin** | Full platform control (planned). |
+| **Developer** | Limited secret access (planned). |
+| **Viewer** | Metadata-only access (planned). |
+
+Today, only the RBAC test routes enforce these roles; resource APIs are not implemented yet.
 
 ## Repository layout
 
 - `docker-compose.yml` — local PostgreSQL only
-- `backend/` — Go HTTP API (`cmd/api` entrypoint), `database/sql` + `lib/pq`, auth helpers, migrations under `internal/database/migrations/`
+- `backend/` — Go HTTP API (`cmd/api` entrypoint), `database/sql` + `lib/pq`, auth and RBAC helpers, migrations under `internal/database/migrations/`
 
 ## Planned (later phases)
 
-- RBAC enforcement across resource APIs
-- Secrets access patterns and safe handling
+- Secrets registry and access APIs with RBAC enforcement
+- Policy engine APIs
 - Audit logging
 - Risk / misconfiguration scanning integrations
 - Frontend and operational tooling
@@ -22,4 +32,3 @@ Cloud-native portfolio project oriented toward secrets access, RBAC, audit loggi
 ## Quick start
 
 See `backend/README.md` for Docker Compose, migrations, seed data, `go run ./cmd/api`, and `curl` examples.
-

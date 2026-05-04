@@ -28,3 +28,28 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func RequireRoles(allowedRoles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		v, ok := c.Get("role")
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			c.Abort()
+			return
+		}
+		role, ok := v.(string)
+		if !ok || role == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			c.Abort()
+			return
+		}
+		for _, allowed := range allowedRoles {
+			if role == allowed {
+				c.Next()
+				return
+			}
+		}
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		c.Abort()
+	}
+}

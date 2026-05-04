@@ -45,5 +45,17 @@ func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
 	authRoutes.POST("/login", authHandler.Login)
 	authRoutes.GET("/me", auth.AuthMiddleware(cfg.JWTSecret), authHandler.Me)
 
+	rbac := v1.Group("/rbac")
+	rbac.Use(auth.AuthMiddleware(cfg.JWTSecret))
+	rbac.GET("/admin-check", auth.RequireRoles(auth.RoleAdmin), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "admin access granted"})
+	})
+	rbac.GET("/developer-check", auth.RequireRoles(auth.RoleAdmin, auth.RoleDeveloper), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "developer access granted"})
+	})
+	rbac.GET("/viewer-check", auth.RequireRoles(auth.RoleAdmin, auth.RoleDeveloper, auth.RoleViewer), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "viewer access granted"})
+	})
+
 	return r
 }

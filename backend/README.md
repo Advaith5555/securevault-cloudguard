@@ -1,6 +1,6 @@
 # SecureVault CloudGuard — Backend
 
-Go API with Gin, PostgreSQL, health checks, and Phase 3 JWT authentication (demo users).
+Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), and Phase 4 RBAC middleware (test routes).
 
 ## Prerequisites
 
@@ -64,6 +64,58 @@ Call `/me` with the token from the login response:
 ```bash
 curl http://localhost:8080/api/v1/auth/me \
   -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### RBAC (Phase 4)
+
+Log in as each user and substitute `YOUR_TOKEN` with the returned JWT.
+
+Login as admin:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@securevault.local","password":"Admin@123"}'
+```
+
+Login as developer:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"developer@securevault.local","password":"Dev@123"}'
+```
+
+Login as viewer:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"viewer@securevault.local","password":"Viewer@123"}'
+```
+
+**Admin** — can hit all three checks:
+
+```bash
+curl http://localhost:8080/api/v1/rbac/admin-check -H "Authorization: Bearer YOUR_TOKEN"
+curl http://localhost:8080/api/v1/rbac/developer-check -H "Authorization: Bearer YOUR_TOKEN"
+curl http://localhost:8080/api/v1/rbac/viewer-check -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Developer** — forbidden on `admin-check` (`403`), allowed on `developer-check` and `viewer-check`:
+
+```bash
+curl http://localhost:8080/api/v1/rbac/admin-check -H "Authorization: Bearer YOUR_TOKEN"
+curl http://localhost:8080/api/v1/rbac/developer-check -H "Authorization: Bearer YOUR_TOKEN"
+curl http://localhost:8080/api/v1/rbac/viewer-check -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Viewer** — forbidden on `admin-check` and `developer-check`, allowed on `viewer-check`:
+
+```bash
+curl http://localhost:8080/api/v1/rbac/admin-check -H "Authorization: Bearer YOUR_TOKEN"
+curl http://localhost:8080/api/v1/rbac/developer-check -H "Authorization: Bearer YOUR_TOKEN"
+curl http://localhost:8080/api/v1/rbac/viewer-check -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 Environment variables: see the root `.env.example`.
