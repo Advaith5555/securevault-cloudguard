@@ -2,15 +2,15 @@
 
 A cloud-native secrets access, RBAC, audit logging, and risk scanning backend built with **Go**, **Gin**, **PostgreSQL**, **Docker Compose**, **JWT**, **OpenAPI**, **GitHub Actions**, and a **Dockerfile** for the API.
 
-This is a **portfolio / learning project** I built step by step. **It is not a production product.** The backend is **also deployed on Render** for demonstration: **`https://securevault-api-5t61.onrender.com`** ([`docs/render-deployment.md`](docs/render-deployment.md)). A **Next.js** dashboard ships in **`frontend/`** but is **not deployed** anywhere yet—you run it locally and point **`NEXT_PUBLIC_API_BASE_URL`** at your API (`frontend/.env.example` documents the demo API host).
+This is a **portfolio / learning project** I built step by step. **It is not a production product** and **is not represented as production-ready**. The **backend** is deployed on **Render** and uses **Render PostgreSQL**: **`https://securevault-api-5t61.onrender.com`** ([`docs/render-deployment.md`](docs/render-deployment.md)). The **Next.js** dashboard source lives in **`frontend/`** and is **deployed on Vercel** at **`https://securevault-cloudguard.vercel.app`**. In that deployment, **`NEXT_PUBLIC_API_BASE_URL`** is set to the Render API URL so the app’s `/__upstream` rewrites reach the live backend.
 
 ## Project status
 
-- **Backend MVP:** Runnable locally (Docker Compose + `go run`)—see [`backend/README.md`](backend/README.md)—or **`docker build`**. **Live demo:** [`https://securevault-api-5t61.onrender.com`](https://securevault-api-5t61.onrender.com) (**Render**, portfolio use only; details in [`docs/render-deployment.md`](docs/render-deployment.md)).
+- **Backend MVP:** Runnable locally (Docker Compose + `go run`)—see [`backend/README.md`](backend/README.md)—or **`docker build`**. **Live demo API:** [`https://securevault-api-5t61.onrender.com`](https://securevault-api-5t61.onrender.com) on **Render** with **Render PostgreSQL** (portfolio / learning tier only; details in [`docs/render-deployment.md`](docs/render-deployment.md)).
 - **Docker image:** `backend/Dockerfile` builds **`securevault-api`**.
 - **Live database (Render demo):** **Render PostgreSQL**; **`001_init.sql`** and **`002_seed_users.sql`** were applied manually using the dashboard’s external DB access (**no connection strings in this repo**).
-- **Frontend:** **Next.js + TypeScript + Tailwind** dashboard implemented under [`frontend/`](frontend/) (connects to the API via `NEXT_PUBLIC_API_BASE_URL` → Next rewrites). **Not hosted** yet in this README’s scope—run `npm install` / `npm run dev` inside `frontend/` (see [`frontend/README.md`](frontend/README.md)).
-- **GCP / Cloud Run:** Documented as a **future or alternative path** in [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md)—that GCP project needed **billing to enable APIs**, so Render was chosen for this live milestone.
+- **Frontend:** **Next.js + TypeScript + Tailwind** in [`frontend/`](frontend/). **Deployed on Vercel:** [`https://securevault-cloudguard.vercel.app`](https://securevault-cloudguard.vercel.app). The live app uses **`NEXT_PUBLIC_API_BASE_URL`** pointed at **`https://securevault-api-5t61.onrender.com`** (see [`frontend/README.md`](frontend/README.md)). You can still run the UI locally with `npm run dev`.
+- **GCP / Cloud Run:** Documented as a **future or alternative path** in [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md)—that GCP project needed **billing to enable APIs**, so Render was chosen for the current live API milestone.
 - **Google Secret Manager:** Planned as a cloud improvement; **not** wired into the codebase today (`secret_ref` and simulated access are educational).
 - **Final review / interview prep:** Markdown in [`docs/project-review/`](docs/project-review/) (checklist, talking points, Q&A, roadmap)—see **Final review package** below.
 
@@ -47,11 +47,11 @@ Topics this project practices in a small, local setting:
 - [x] OpenAPI documentation (`backend/docs/openapi.yaml`)
 - [x] **Live backend on Render** (HTTPS demo—not production SLA)
 - [x] Cloud Run deployment **documentation** (**alternative/future path**; not used for current live demo)
-- [x] **Next.js dashboard (local)** — [`frontend/`](frontend/) App Router UI for summary, secrets, risks, and admin-gated audit logs
+- [x] **Next.js dashboard** — [`frontend/`](frontend/) App Router UI; **deployed on Vercel** ([`https://securevault-cloudguard.vercel.app`](https://securevault-cloudguard.vercel.app)) with **`NEXT_PUBLIC_API_BASE_URL`** targeting the Render API; routes include **`/dashboard`**, **`/secrets`**, **`/risks`**, and **`/audit-logs`** (plus **`/login`**). **Smoke checks done:** admin **login** and **dashboard** page against the live stack; **secrets**, **risks**, and **audit logs** pages are **available** in the deployed app (audit list remains **admin-only** on the API).
 
 ## Not implemented yet / honest limitations
 
-- **Frontend** exists in-repo ([`frontend/`](frontend/)) but is **run locally only** here—**no frontend hosting URL** bundled in this README; token storage uses **localStorage** for MVP simplicity.
+- **Portfolio hosting only:** Vercel + Render are **demo / learning** setups—**not** production SLAs, hardening guarantees, or cost-optimized operations. Token storage in the UI remains **`localStorage`** for MVP simplicity.
 - **Hosted Render instance** is a **portfolio smoke-test tier**: possible **cold starts**, **demo users**, **not** audited for production workloads.
 - No **Google Secret Manager** integration in code.
 - No **production SSO / OAuth** (email + password demo users only—even on Render, until you replace them).
@@ -91,11 +91,12 @@ flowchart TB
 |------|--------|
 | **Backend** | Go 1.22+, Gin |
 | **Database** | PostgreSQL (local Docker Compose; **Render Postgres** for the live demo) |
-| **Deployed demo** | [Render Web Service](https://securevault-api-5t61.onrender.com) + Render PostgreSQL ([`docs/render-deployment.md`](docs/render-deployment.md)) |
+| **Deployed API** | [Render Web Service](https://securevault-api-5t61.onrender.com) + **Render PostgreSQL** ([`docs/render-deployment.md`](docs/render-deployment.md)) — portfolio demo, not production |
+| **Deployed dashboard** | [Vercel](https://securevault-cloudguard.vercel.app) — Next.js frontend; **`NEXT_PUBLIC_API_BASE_URL`** → Render API ([`frontend/README.md`](frontend/README.md)) |
 | **Auth** | JWT (HS256), bcrypt password hashes |
 | **DevOps** | Docker Compose, Docker image (`backend/Dockerfile`), GitHub Actions CI |
 | **Docs** | OpenAPI 3.0.3 (`backend/docs/openapi.yaml`), Markdown in `docs/` ([**Render**](docs/render-deployment.md), [**Cloud Run**](docs/cloud-run-deployment.md) notes) |
-| **Frontend (local)** | Next.js 15 App Router in [`frontend/`](frontend/) — see [`frontend/README.md`](frontend/README.md); uses **`NEXT_PUBLIC_API_BASE_URL`** for API rewrites |
+| **Frontend (source)** | Next.js 15 App Router in [`frontend/`](frontend/) — local dev + Vercel deploy; **`NEXT_PUBLIC_API_BASE_URL`** for `next.config` rewrites to the Go API |
 | **GCP (alternative)** | Cloud Run guide when billing/APIs are enabled—see **`docs/cloud-run-deployment.md`** |
 
 ## API overview
@@ -103,7 +104,8 @@ flowchart TB
 Base URLs:
 
 - **Local:** `http://localhost:8080`
-- **Render (portfolio demo):** `https://securevault-api-5t61.onrender.com`
+- **Render (portfolio demo API + Render Postgres):** `https://securevault-api-5t61.onrender.com`
+- **Vercel (portfolio demo UI):** `https://securevault-cloudguard.vercel.app` — configured with **`NEXT_PUBLIC_API_BASE_URL=https://securevault-api-5t61.onrender.com`** so browser calls proxy to the Render backend (not production-grade hosting).
 
 | Path | Role |
 |------|------|
@@ -151,7 +153,17 @@ RBAC probe routes under `/api/v1/rbac/*` and full request/response schemas are i
 
 Environment variables: see [`.env.example`](.env.example) and [`docs/environment-variables.md`](docs/environment-variables.md). More backend detail: [`backend/README.md`](backend/README.md).
 
-**Optional dashboard:** from [`frontend/`](frontend/), copy [`frontend/.env.example`](frontend/.env.example) to `.env.local`, then `npm install` and `npm run dev` (details in [`frontend/README.md`](frontend/README.md)).
+**Optional local dashboard:** from [`frontend/`](frontend/), copy [`frontend/.env.example`](frontend/.env.example) to `.env.local`, then `npm install` and `npm run dev` (details in [`frontend/README.md`](frontend/README.md)).
+
+## Screenshots
+
+Screenshot files are **not committed** to this repository yet. Placeholders for assets to add later:
+
+- [ ] Login (`/login`)
+- [ ] Dashboard summary (`/dashboard`)
+- [ ] Secrets registry (`/secrets`)
+- [ ] Risk findings (`/risks`)
+- [ ] Audit logs (`/audit-logs`, admin-only data from the API)
 
 ## Demo users
 
@@ -232,7 +244,8 @@ No database service in CI, no image publish, no deploy.
 
 | Resource | Description |
 |----------|-------------|
-| [`frontend/README.md`](frontend/README.md) | Next.js dashboard setup, env var, demo users |
+| [`backend/docs/openapi.yaml`](backend/docs/openapi.yaml) | Full OpenAPI contract |
+| [`frontend/README.md`](frontend/README.md) | Next.js dashboard: Vercel URL, `NEXT_PUBLIC_API_BASE_URL`, local dev, demo users |
 | [`docs/architecture.md`](docs/architecture.md) | Local vs planned GCP diagrams |
 | [`docs/environment-variables.md`](docs/environment-variables.md) | Env vars & safety notes |
 | [`docs/render-deployment.md`](docs/render-deployment.md) | Live **Render** deployment (portfolio demo HTTPS + Postgres migrations) |
@@ -251,7 +264,7 @@ These documents are for **self-review**, **interview preparation**, and **planni
 
 ## How I would explain this in an interview
 
-> “SecureVault CloudGuard is a **cloud-security-focused backend** I built to practice **secret metadata**, **JWT auth**, **RBAC middleware**, **audit trails**, and a **metadata-only risk scanner**—honest about **simulated secret access**. I ran it locally with **Postgres via Docker Compose**, shipped a **portfolio HTTPS instance on Render**, and wrote **GCP Cloud Run notes as an alternate path** when **billing/API access** wasn't the right choice for my GCP sandbox. I also added a **small Next.js dashboard** in **`frontend/`** for read-only visibility over the same APIs—**not deployed** in this milestone, but easy to walk through in an interview.”
+> “SecureVault CloudGuard is a **cloud-security-focused backend** I built to practice **secret metadata**, **JWT auth**, **RBAC middleware**, **audit trails**, and a **metadata-only risk scanner**—honest about **simulated secret access**. I ran it locally with **Postgres via Docker Compose**, put the API on **Render with Render Postgres** for a **portfolio HTTPS demo**, and kept **GCP Cloud Run** documented as a **future or alternative path** when **billing/API access** wasn’t the right fit. The **Next.js dashboard** is on **Vercel**, calling the Render API via **`NEXT_PUBLIC_API_BASE_URL`**—still **not production**, but a concrete end-to-end demo.”
 
 ## What I learned
 
@@ -265,7 +278,7 @@ These documents are for **self-review**, **interview preparation**, and **planni
 - **Audit logging** that does not break the main flow on insert failure (MVP choice).
 - **Risk rules** over metadata and persisting findings.
 - **OpenAPI** as the contract for tools and teammates.
-- **Next.js + Tailwind** dashboard wiring (summary and list endpoints, RBAC-aware audit handling).
+- **Next.js + Tailwind** dashboard wiring (summary and list endpoints, RBAC-aware audit handling) and a **Vercel** deploy that proxies to the Render API via **`NEXT_PUBLIC_API_BASE_URL`**.
 - **GitHub Actions** for repeatable quality gates.
 - Reading **Cloud Run / Artifact Registry** docs and turning them into a **checklist** for future me.
 
@@ -277,7 +290,7 @@ These documents are for **self-review**, **interview preparation**, and **planni
 - **Policy engine** beyond fixed roles (e.g. environment-scoped rules).
 - **Unit and integration tests** (including DB-backed tests where appropriate).
 - **GitHub Actions** pipeline to **build/push** Docker images (no deploy unless you add it).
-- **Cloud Monitoring** alerts and uptime checks once something is actually hosted.
+- **Cloud Monitoring**–style alerts and stricter uptime practices if this ever moves beyond portfolio demos.
 
 ## License
 
