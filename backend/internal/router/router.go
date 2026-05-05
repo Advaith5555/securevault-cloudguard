@@ -42,12 +42,15 @@ func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
 	secretRepo := repository.NewSecretRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
 	riskRepo := repository.NewRiskRepository(db)
+	dashboardRepo := repository.NewDashboardRepository(db)
 	auditSvc := services.NewAuditService(auditRepo)
+	dashboardSvc := services.NewDashboardService(dashboardRepo, auditSvc)
 	secretSvc := services.NewSecretService(secretRepo)
 	riskSvc := services.NewRiskService(secretRepo, riskRepo, auditSvc)
 	secretHandler := handlers.NewSecretHandler(secretSvc, auditSvc)
 	riskHandler := handlers.NewRiskHandler(riskSvc)
 	auditHandler := handlers.NewAuditHandler(auditSvc)
+	dashboardHandler := handlers.NewDashboardHandler(dashboardSvc)
 	authHandler := handlers.NewAuthHandler(userRepo, cfg.JWTSecret, auditSvc)
 
 	v1 := r.Group("/api/v1")
@@ -84,6 +87,10 @@ func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
 	risks.Use(auth.AuthMiddleware(cfg.JWTSecret))
 	risks.POST("/scan", auth.RequireRoles(auth.RoleAdmin), riskHandler.Scan)
 	risks.GET("", auth.RequireRoles(auth.RoleAdmin, auth.RoleDeveloper, auth.RoleViewer), riskHandler.List)
+
+	dashboard := v1.Group("/dashboard")
+	dashboard.Use(auth.AuthMiddleware(cfg.JWTSecret))
+	dashboard.GET("/summary", auth.RequireRoles(auth.RoleAdmin, auth.RoleDeveloper, auth.RoleViewer), dashboardHandler.Summary)
 
 	return r
 }

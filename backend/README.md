@@ -1,6 +1,6 @@
 # SecureVault CloudGuard — Backend
 
-Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC, Phase 5 Secret Registry (metadata and `secret_ref` only), Phase 6 audit logging, and Phase 7 risk scanning (metadata-only rules, persisted in `risk_findings`).
+Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC, Phase 5 Secret Registry (metadata and `secret_ref` only), Phase 6 audit logging, Phase 7 risk scanning (metadata-only rules, persisted in `risk_findings`), and Phase 8 dashboard summary (`GET /api/v1/dashboard/summary`).
 
 ## Prerequisites
 
@@ -274,5 +274,21 @@ Check audit logs for the scan:
 curl "http://localhost:8080/api/v1/audit-logs?limit=5" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
+
+### Dashboard summary (Phase 8)
+
+Aggregates secret counts by environment, risk counts by level, and the **5 most recent** audit log entries (same shape as `/api/v1/audit-logs`). Any authenticated role may call it.
+
+```bash
+ADMIN_TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@securevault.local","password":"Admin@123"}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
+
+curl http://localhost:8080/api/v1/dashboard/summary \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+**Developer** and **viewer** tokens also work for this endpoint (substitute tokens from logging in as `developer@securevault.local` / `viewer@securevault.local`).
 
 Environment variables: see the root `.env.example`.
