@@ -1,6 +1,6 @@
 # SecureVault CloudGuard — Backend
 
-Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC, Phase 5 Secret Registry (metadata and `secret_ref` only), Phase 6 audit logging, Phase 7 risk scanning (metadata-only rules, persisted in `risk_findings`), and Phase 8 dashboard summary (`GET /api/v1/dashboard/summary`).
+Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC through Phase 8 dashboard summary, and Phase 9 OpenAPI specification (`backend/docs/openapi.yaml`). Swagger UI is not served by the binary; import the YAML into Swagger Editor, Postman, or Insomnia.
 
 ## Prerequisites
 
@@ -290,5 +290,17 @@ curl http://localhost:8080/api/v1/dashboard/summary \
 ```
 
 **Developer** and **viewer** tokens also work for this endpoint (substitute tokens from logging in as `developer@securevault.local` / `viewer@securevault.local`).
+
+## API Documentation
+
+OpenAPI **3.0.3** for this backend lives at **`backend/docs/openapi.yaml`**. Import it into [Swagger Editor](https://editor.swagger.io), Postman, or Insomnia to explore requests and schemas. **The API does not currently serve Swagger UI** (kept minimal for this MVP).
+
+**Try Swagger Editor:**
+
+1. Open https://editor.swagger.io  
+2. **File → Clear editor**, then paste the contents of `backend/docs/openapi.yaml` (or use **File → Import file** after cloning the repo).  
+3. With the backend running locally (`go run ./cmd/api`), execute requests against **http://localhost:8080** (set the **Authorize** Bearer token using a JWT from `POST /api/v1/auth/login`).
+
+Validate the YAML: load it in Swagger Editor (it reports parsing errors immediately) or use any OpenAPI 3 linter you prefer.
 
 Environment variables: see the root `.env.example`.

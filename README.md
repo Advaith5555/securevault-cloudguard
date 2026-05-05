@@ -4,11 +4,11 @@ Cloud-native portfolio project oriented toward secrets access, RBAC, audit loggi
 
 ## Current status
 
-**Phase 8 — Dashboard summary API:** **`GET /api/v1/dashboard/summary`** returns aggregate counts (secrets by environment, open risk findings by level) plus the five most recent audit log entries. It is intended for a **future** web dashboard; **no frontend is in this repo yet.**
+**Phase 9 — OpenAPI documentation:** Machine-readable API description is maintained at **`backend/docs/openapi.yaml`** (OpenAPI 3.0.3): health, auth, RBAC probes, secrets, audit logs, risk scan/list, and dashboard summary. **Swagger UI is not served by the application**—import the spec into [Swagger Editor](https://editor.swagger.io), Postman, or Insomnia and point requests at **`http://localhost:8080`** when the API is running locally.
 
-Phase 7 risk scanning, Phase 6 audit logging, and Phase 5 secret registry behaviors are unchanged.
+Prior phases remain in place for the Gin backend (secrets metadata and `secret_ref` only—no plaintext values in simulated access responses), audit logging, risk scanning, and dashboard summary.
 
-**Not implemented yet:** policy engine APIs, frontend dashboard UI, OpenAPI/Swagger, CI/CD, and cloud (GCP) deployment.
+**Still planned:** policy engine APIs, frontend, CI/CD, and cloud deployment (for example GCP/Cloud Run).
 
 ## Role permission matrix (planned product shape)
 
@@ -23,8 +23,8 @@ The secret registry, risk list, dashboard summary, and audit log list (admin-onl
 ## Repository layout
 
 - `docker-compose.yml` — local PostgreSQL only
-- `backend/` — Go HTTP API (`cmd/api` entrypoint), `database/sql` + `lib/pq`, auth and RBAC helpers, migrations under `internal/database/migrations/`
+- `backend/` — Go HTTP API (`cmd/api` entrypoint), `database/sql` + `lib/pq`, auth and RBAC helpers, migrations under `internal/database/migrations/`, OpenAPI spec under `backend/docs/`
 
 ## Quick start
 
-See `backend/README.md` for Docker Compose, migrations, seed data, `go run ./cmd/api`, and `curl` examples.
+See `backend/README.md` for Docker Compose, migrations, seed data, `go run ./cmd/api`, `curl` examples, and OpenAPI workflow.

@@ -1,0 +1,1016 @@
+openapi: 3.0.3
+info:
+  title: SecureVault CloudGuard API
+  version: 1.0.0
+  description: |
+    Cloud-native secrets access, RBAC, audit logging, and risk scanning API built for secure cloud engineering practice.
+
+    Secret metadata and **`secret_ref`** values may appear in responses. **Plaintext secret values are never returned** from any endpoint. The simulated secret access endpoint returns a demo payload only.
+
+    RBAC summaries (implementations use JWT claims):
+    - **Secrets:** list/get — all roles; create/update/delete — **admin only**; access (simulated) — **admin, developer**.
+    - **Audit logs (`GET /api/v1/audit-logs`)** — **admin only**.
+    - **Risk scan (`POST /api/v1/risks/scan`)** — **admin only**; risk list — all authenticated roles.
+    - **Dashboard summary** — all authenticated roles.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+paths:
+  /health:
+    get:
+      summary: Service health check
+      operationId: getHealth
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                ok:
+                  value:
+                    status: ok
+                    service: securevault-cloudguard-api
+                    environment: development
+
+  /health/db:
+    get:
+      summary: Database connectivity check
+      operationId: getHealthDb
+      responses:
+        "200":
+          description: Database is reachable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatabaseHealthResponse"
+              examples:
+                connected:
+                  value:
+                    status: ok
+                    database: connected
+        "503":
+          description: Database unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatabaseHealthErrorResponse"
+
+  /api/v1/auth/login:
+    post:
+      summary: Authenticate and receive a JWT
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            examples:
+              admin:
+                value:
+                  email: admin@securevault.local
+                  password: Admin@123
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+              examples:
+                success:
+                  value:
+                    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    user:
+                      id: 11111111-1111-1111-1111-111111111111
+                      name: Admin User
+                      email: admin@securevault.local
+                      role: admin
+        "400":
+          description: Invalid JSON or body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: invalid request
+        "401":
+          description: Invalid email or password (generic message; does not reveal whether the email exists)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: invalid email or password
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/auth/me:
+    get:
+      summary: Current user from JWT
+      operationId: getMe
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Claims for the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+              examples:
+                admin:
+                  value:
+                    id: 11111111-1111-1111-1111-111111111111
+                    email: admin@securevault.local
+                    role: admin
+        "401":
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/rbac/admin-check:
+    get:
+      summary: RBAC probe — admin role only
+      description: "Returns 403 if the JWT role is not **admin**."
+      operationId: rbacAdminCheck
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Admin access granted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RbacCheckResponse"
+              example:
+                message: admin access granted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/rbac/developer-check:
+    get:
+      summary: RBAC probe — admin or developer
+      description: "Returns 403 if the JWT role is not **admin** or **developer**."
+      operationId: rbacDeveloperCheck
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Developer-level access granted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RbacCheckResponse"
+              example:
+                message: developer access granted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/rbac/viewer-check:
+    get:
+      summary: RBAC probe — any authenticated role
+      description: "Allowed for **admin**, **developer**, or **viewer**."
+      operationId: rbacViewerCheck
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Viewer-level access granted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RbacCheckResponse"
+              example:
+                message: viewer access granted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/secrets:
+    get:
+      summary: List secret metadata
+      description: "Allowed for **admin**, **developer**, and **viewer**. Returns an array of metadata records (no plaintext secret values)."
+      operationId: listSecrets
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of secrets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SecretResponse"
+              examples:
+                sample:
+                  value:
+                    - id: 22222222-2222-2222-2222-222222222222
+                      name: payment-api-key
+                      environment: dev
+                      owner: payments-team
+                      service: payment-service
+                      secret_ref: local/demo/payment-api-key
+                      created_by: 11111111-1111-1111-1111-111111111111
+                      created_at: "2026-01-15T10:00:00Z"
+                      updated_at: "2026-01-15T10:00:00Z"
+                      last_accessed_at: null
+                      expires_at: null
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    post:
+      summary: Create secret metadata
+      description: "**Admin only.** Stores metadata and `secret_ref` only; no plaintext secret value is accepted or stored by this API in the MVP."
+      operationId: createSecret
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSecretRequest"
+            examples:
+              sample:
+                value:
+                  name: payment-api-key
+                  environment: dev
+                  owner: payments-team
+                  service: payment-service
+                  secret_ref: local/demo/payment-api-key
+      responses:
+        "201":
+          description: Secret created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden (non-admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/v1/secrets/{id}:
+    get:
+      summary: Get secret metadata by ID
+      operationId: getSecretById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SecretId"
+      responses:
+        "200":
+          description: Secret metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    put:
+      summary: Update secret metadata
+      description: "**Admin only.** Partial updates; omit fields to leave unchanged."
+      operationId: updateSecret
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SecretId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSecretRequest"
+            example:
+              owner: platform-team
+      responses:
+        "200":
+          description: Updated secret
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden (non-admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    delete:
+      summary: Delete secret metadata
+      description: "**Admin only.**"
+      operationId: deleteSecret
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SecretId"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                properties:
+                  message:
+                    type: string
+                    example: deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden (non-admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/v1/secrets/{id}/access:
+    post:
+      summary: Simulated secret access
+      description: |
+        **Admin and developer only** (viewer receives 403).
+
+        Marks `last_accessed_at` on the secret and returns a **simulated access payload**. This MVP endpoint **does not return plaintext secret values**—only `secret_id`, `secret_ref`, and an explanatory note.
+      operationId: accessSecretSimulated
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SecretId"
+      responses:
+        "200":
+          description: Simulated access result (no secret material)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretAccessResponse"
+              example:
+                message: secret access simulated
+                secret_id: 22222222-2222-2222-2222-222222222222
+                secret_ref: local/demo/payment-api-key
+                note: plaintext secret values are not exposed in this demo endpoint
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/v1/audit-logs:
+    get:
+      summary: List audit log entries
+      description: |
+        **Admin only.** Optional query `limit` (invalid or out-of-range values fall back to **50** in the server; max **100**).
+      operationId: listAuditLogs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Max rows to return (1–100; default 50 when omitted or invalid)
+          schema:
+            type: integer
+            minimum: 1
+            example: 10
+      responses:
+        "200":
+          description: Audit log entries (newest first in the default repository ordering)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLogResponse"
+              examples:
+                sample:
+                  value:
+                    - id: 33333333-3333-3333-3333-333333333333
+                      user_id: 11111111-1111-1111-1111-111111111111
+                      user_email: admin@securevault.local
+                      action: login
+                      resource_type: auth
+                      resource_id: null
+                      status: success
+                      ip_address: 127.0.0.1
+                      message: user logged in successfully
+                      created_at: "2026-01-15T10:05:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden (non-admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/v1/risks:
+    get:
+      summary: List risk findings
+      description: Ordered by severity (high, then medium, then low) then `created_at` descending.
+      operationId: listRisks
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Risk findings from the latest scan
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RiskFindingResponse"
+              examples:
+                sample:
+                  value:
+                    - id: 44444444-4444-4444-4444-444444444444
+                      secret_id: 22222222-2222-2222-2222-222222222222
+                      risk_type: prod_secret_missing_owner
+                      risk_level: high
+                      description: Production secret has no owner
+                      recommendation: Assign an owner immediately for production secret governance
+                      created_at: "2026-01-15T10:10:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/v1/risks/scan:
+    post:
+      summary: Run risk scan
+      description: |
+        **Admin only.** Re-evaluates all registered secrets from **metadata only**, clears existing `risk_findings` rows, inserts new results, and writes an audit entry. No plaintext secret values are analyzed.
+      operationId: runRiskScan
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Scan finished
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskScanResponse"
+              example:
+                message: risk scan completed
+                findings:
+                  - id: 44444444-4444-4444-4444-444444444444
+                    secret_id: 22222222-2222-2222-2222-222222222222
+                    risk_type: missing_owner
+                    risk_level: medium
+                    description: Secret does not have an assigned owner
+                    recommendation: Assign a responsible owner or team for accountability
+                    created_at: "2026-01-15T10:10:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden (non-admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Scan or persistence failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: risk scan failed
+
+  /api/v1/dashboard/summary:
+    get:
+      summary: Dashboard summary
+      description: "Aggregated secret and risk counts plus the **five** most recent audit log entries. Allowed for **admin**, **developer**, and **viewer**."
+      operationId: getDashboardSummary
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Summary for a future dashboard UI
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummaryResponse"
+              examples:
+                sample:
+                  value:
+                    total_secrets: 3
+                    dev_secrets: 2
+                    staging_secrets: 0
+                    prod_secrets: 1
+                    high_risks: 1
+                    medium_risks: 2
+                    low_risks: 0
+                    recent_audit_logs:
+                      - id: 33333333-3333-3333-3333-333333333333
+                        user_id: 11111111-1111-1111-1111-111111111111
+                        user_email: admin@securevault.local
+                        action: risk_scan_executed
+                        resource_type: risk
+                        resource_id: null
+                        status: success
+                        ip_address: 127.0.0.1
+                        message: risk scan completed
+                        created_at: "2026-01-15T10:10:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          description: Failed to load summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: failed to load dashboard summary
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    SecretId:
+      name: id
+      in: path
+      required: true
+      description: Secret UUID
+      schema:
+        type: string
+        format: uuid
+        example: 22222222-2222-2222-2222-222222222222
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: unauthorized
+    Forbidden:
+      description: Authenticated but insufficient role
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: forbidden
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: not found
+    BadRequest:
+      description: Invalid JSON or validation failure
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: invalid request
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: server error
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    LoginResponse:
+      type: object
+      required:
+        - token
+        - user
+      properties:
+        token:
+          type: string
+          description: JWT valid for API requests
+        user:
+          type: object
+          required:
+            - id
+            - name
+            - email
+            - role
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+            role:
+              $ref: "#/components/schemas/UserRole"
+
+    UserResponse:
+      type: object
+      description: JWT claims exposed by GET /auth/me (name is not included)
+      required:
+        - id
+        - email
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/UserRole"
+
+    UserRole:
+      type: string
+      enum:
+        - admin
+        - developer
+        - viewer
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+        - environment
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: securevault-cloudguard-api
+        environment:
+          type: string
+          description: From server configuration
+
+    DatabaseHealthResponse:
+      type: object
+      required:
+        - status
+        - database
+      properties:
+        status:
+          type: string
+          example: ok
+        database:
+          type: string
+          example: connected
+
+    DatabaseHealthErrorResponse:
+      type: object
+      required:
+        - status
+        - database
+      properties:
+        status:
+          type: string
+          example: error
+        database:
+          type: string
+          example: disconnected
+
+    RbacCheckResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+
+    SecretResponse:
+      type: object
+      required:
+        - id
+        - name
+        - environment
+        - owner
+        - service
+        - secret_ref
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        environment:
+          type: string
+          enum:
+            - dev
+            - staging
+            - prod
+        owner:
+          type: string
+          description: May be empty if not set
+        service:
+          type: string
+          description: May be empty if not set
+        secret_ref:
+          type: string
+          description: Reference path only; not plaintext secret material
+        created_by:
+          type: string
+          format: uuid
+          description: May be empty string if nullable in persistence
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_accessed_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateSecretRequest:
+      type: object
+      required:
+        - name
+        - environment
+        - secret_ref
+      properties:
+        name:
+          type: string
+        environment:
+          type: string
+          enum:
+            - dev
+            - staging
+            - prod
+        owner:
+          type: string
+        service:
+          type: string
+        secret_ref:
+          type: string
+          description: Location/reference for the secret; not the secret value
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    UpdateSecretRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        environment:
+          type: string
+          enum:
+            - dev
+            - staging
+            - prod
+        owner:
+          type: string
+        service:
+          type: string
+        secret_ref:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    SecretAccessResponse:
+      type: object
+      required:
+        - message
+        - secret_id
+        - secret_ref
+        - note
+      properties:
+        message:
+          type: string
+          example: secret access simulated
+        secret_id:
+          type: string
+          format: uuid
+        secret_ref:
+          type: string
+          description: Reference only (not a plaintext secret)
+        note:
+          type: string
+          description: Explains that plaintext values are not returned
+
+    AuditLogResponse:
+      type: object
+      required:
+        - id
+        - user_email
+        - action
+        - resource_type
+        - status
+        - ip_address
+        - message
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+          nullable: true
+        user_email:
+          type: string
+        action:
+          type: string
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum:
+            - success
+            - denied
+            - failed
+        ip_address:
+          type: string
+        message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    RiskFindingResponse:
+      type: object
+      required:
+        - id
+        - secret_id
+        - risk_type
+        - risk_level
+        - description
+        - recommendation
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        secret_id:
+          type: string
+          format: uuid
+        risk_type:
+          type: string
+        risk_level:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        description:
+          type: string
+        recommendation:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    RiskScanResponse:
+      type: object
+      required:
+        - message
+        - findings
+      properties:
+        message:
+          type: string
+          example: risk scan completed
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskFindingResponse"
+
+    DashboardSummaryResponse:
+      type: object
+      required:
+        - total_secrets
+        - dev_secrets
+        - staging_secrets
+        - prod_secrets
+        - high_risks
+        - medium_risks
+        - low_risks
+        - recent_audit_logs
+      properties:
+        total_secrets:
+          type: integer
+          minimum: 0
+        dev_secrets:
+          type: integer
+          minimum: 0
+        staging_secrets:
+          type: integer
+          minimum: 0
+        prod_secrets:
+          type: integer
+          minimum: 0
+        high_risks:
+          type: integer
+          minimum: 0
+        medium_risks:
+          type: integer
+          minimum: 0
+        low_risks:
+          type: integer
+          minimum: 0
+        recent_audit_logs:
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/AuditLogResponse"
