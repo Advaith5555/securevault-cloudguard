@@ -1,6 +1,6 @@
 # SecureVault CloudGuard — Backend
 
-Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC through Phase 8 dashboard summary, Phase 9 OpenAPI (`backend/docs/openapi.yaml`), and a **multi-stage Dockerfile** for container runs. Swagger UI is not served by the binary; import the YAML into Swagger Editor, Postman, or Insomnia.
+Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC through Phase 8 dashboard summary, Phase 9 OpenAPI (`backend/docs/openapi.yaml`), **structured JSON request logs** and **`X-Request-ID`** on every response, and a **multi-stage Dockerfile** for container runs. Swagger UI is not served by the binary; import the YAML into Swagger Editor, Postman, or Insomnia.
 
 The backend is also validated in **GitHub Actions** on pushes and PRs to `main` (`gofmt`, `go vet`, `go test`, `go build`, OpenAPI file present)—see the root **Continuous integration** section. Automated tests are **unit-only** in `internal/auth` and **do not require PostgreSQL** (see [Unit tests](#unit-tests) below).
 
@@ -58,7 +58,13 @@ From this `backend/` directory:
 go test ./...
 ```
 
-These are **unit tests** for **password checks**, **JWT issue/validate**, **role validation**, and **`RequireRoles`** middleware (see `internal/auth/*_test.go`). They use **no database** and need **no environment variables**—suitable for CI and local runs without Docker Postgres.
+These are **unit tests** for **password checks**, **JWT issue/validate**, **role validation**, **`RequireRoles`** middleware (see `internal/auth/*_test.go`), and **`RequestIDMiddleware`** / **`StructuredLogger`** smoke checks (see `internal/middleware/*_test.go`). They use **no database** and need **no environment variables**—suitable for CI and local runs without Docker Postgres.
+
+## Observability
+
+- Every HTTP response includes **`X-Request-ID`**. Clients may send the same header to **correlate** a request across services; otherwise the API **generates** a short random ID (hex) and echoes it on the response.
+- The server writes **one JSON line per request** to stdout (`internal/middleware/logger.go`): timestamp, `request_id`, HTTP method, path, status, `latency_ms`, client IP, and `User-Agent`.
+- **Not logged:** `Authorization` headers, JWTs, request bodies, or secret material—keep logs safe for typical platform log sinks (**Render**, future **Cloud Run**, and so on).
 
 ## Running backend with Docker
 
@@ -86,9 +92,10 @@ This pattern is for **local development only** (Docker Desktop on macOS/Windows 
 ## Test
 
 ```bash
-curl http://localhost:8080/health
-curl http://localhost:8080/health/db
+curl -i http://localhost:8080/health
 ```
+
+You should see an **`X-Request-ID`** response header. Stdout will include a structured JSON access line for correlation in hosted logs (Render, Docker, Cloud Run logs, etc.).
 
 ### Auth (Phase 3)
 

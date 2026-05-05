@@ -29,7 +29,8 @@ Topics this project practices in a small, local setting:
 - **Audit logging** — persist security-relevant actions to `audit_logs` (login, secret lifecycle, risk scan).
 - **Risk scanner** — rule-based findings from **metadata only** (no plaintext secrets).
 - **API documentation** — OpenAPI 3 spec for clients and tools.
-- **CI checks** — format, vet, test, build, spec file present on every push/PR to `main` (**`go test`** currently targets **pure unit** auth logic—not DB-backed scenarios).
+- **Request tracing & logs** — **`X-Request-ID`** on every response and stdout **JSON access logs** (`request_id`, timing, verb/path/status, IP/UA)—helps debug **Render** and future **Cloud Run** deploys **without logging secrets**.
+- **CI checks** — format, vet, test, build, spec file present on every push/PR to `main` (**`go test`** covers **unit** packs only—**auth**, **HTTP middleware** (`request_id`, structured logger)—not DB-backed scenarios yet).
 - **Docker + PostgreSQL** — local database via Compose; production would move to managed SQL.
 
 ## Features implemented
@@ -47,7 +48,9 @@ Topics this project practices in a small, local setting:
 - [x] OpenAPI documentation (`backend/docs/openapi.yaml`)
 - [x] **Live backend on Render** (HTTPS demo—not production SLA)
 - [x] Cloud Run deployment **documentation** (**alternative/future path**; not used for current live demo)
-- [x] **Backend unit tests (auth)** — bcrypt `CheckPassword`, JWT generate/validate, role helpers, `RequireRoles` middleware (`go test ./...` with **no PostgreSQL** required for this phase)
+- [x] **Structured request logging** — one JSON line per HTTP request (method, path, status, latency, client IP, `User-Agent`, `request_id`); **no** `Authorization`, JWT, or body logging.
+- [x] **Request IDs** — inbound **`X-Request-ID`** is honored when present; otherwise generated; always returned on the response for tracing in **Render**, **Cloud Run** (if used later), and local runs.
+- [x] **Backend unit tests (auth + HTTP middleware)** — bcrypt `CheckPassword`, JWT generate/validate, role helpers, `RequireRoles` middleware, **request ID**, **structured logger** smoke tests (`go test ./...` with **no PostgreSQL** required for this phase)
 - [x] **Next.js dashboard** — [`frontend/`](frontend/) App Router UI; **deployed on Vercel** ([`https://securevault-cloudguard.vercel.app`](https://securevault-cloudguard.vercel.app)) with **`NEXT_PUBLIC_API_BASE_URL`** targeting the Render API; routes include **`/dashboard`**, **`/secrets`**, **`/risks`**, and **`/audit-logs`** (plus **`/login`**). **Smoke checks done:** admin **login** and **dashboard** page against the live stack; **secrets**, **risks**, and **audit logs** pages are **available** in the deployed app (audit list remains **admin-only** on the API).
 
 ## Not implemented yet / honest limitations
@@ -235,7 +238,7 @@ Checks:
 
 - **`gofmt`** (must be clean)
 - **`go vet ./...`**
-- **`go test ./...`** — includes **basic unit tests** in **`backend/internal/auth`** (password hashing, JWT, roles, `RequireRoles` middleware). These tests **do not use PostgreSQL**; broader integration coverage can come later.
+- **`go test ./...`** — includes **`internal/auth`** (password/JWT/RBAC middleware) plus **`internal/middleware`** (**request ID** + **structured request logger**) unit tests—**no PostgreSQL**; broader integration coverage can come later.
 
 - **`go build`** for `./cmd/api`
 - **OpenAPI file exists:** `backend/docs/openapi.yaml`

@@ -9,12 +9,16 @@ import (
 	"securevault-cloudguard/backend/internal/auth"
 	"securevault-cloudguard/backend/internal/config"
 	"securevault-cloudguard/backend/internal/handlers"
+	"securevault-cloudguard/backend/internal/middleware"
 	"securevault-cloudguard/backend/internal/repository"
 	"securevault-cloudguard/backend/internal/services"
 )
 
 func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(middleware.RequestIDMiddleware())
+	r.Use(middleware.StructuredLogger())
+	r.Use(gin.Recovery())
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
