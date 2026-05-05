@@ -4,6 +4,12 @@ Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Pha
 
 The backend is also validated in **GitHub Actions** on pushes and PRs to `main` (`gofmt`, `go vet`, `go test`, `go build`, OpenAPI file present)—see the root **Continuous integration** section.
 
+## Cloud Deployment Notes
+
+The API is a good fit to run as a **stateless HTTP container** on **Google Cloud Run**, with **Cloud SQL** replacing Docker Compose Postgres for production-style setups. Optional step-by-step guidance (Artifact Registry, `gcloud run deploy`, cleanup) is in **[../docs/cloud-run-deployment.md](../docs/cloud-run-deployment.md)**. Architecture context: **[../docs/architecture.md](../docs/architecture.md)**; env vars and secrets: **[../docs/environment-variables.md](../docs/environment-variables.md)**.
+
+This repo **does not ship** a `Dockerfile` yet—the deployment doc explains that you add one before `docker build`. **Local development** still assumes **Docker Compose** for PostgreSQL (`docker-compose.yml` at the repo root).
+
 ## Prerequisites
 
 - Go 1.22+
