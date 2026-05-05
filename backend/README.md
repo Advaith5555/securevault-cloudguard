@@ -1,6 +1,6 @@
 # SecureVault CloudGuard — Backend
 
-Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC middleware (test routes), and Phase 5 Secret Registry APIs (metadata and `secret_ref` only; no plaintext secret values returned).
+Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC middleware (test routes), Phase 5 Secret Registry APIs (metadata and `secret_ref` only), and Phase 6 audit logging (admin-only `/api/v1/audit-logs`; no plaintext secret values in audit records).
 
 ## Prerequisites
 
@@ -163,5 +163,46 @@ curl -X POST http://localhost:8080/api/v1/secrets/SECRET_ID/access \
 **Developer token:** log in as `developer@securevault.local` / `Dev@123`. The developer can list secrets and call `POST .../access`, but receives `403 forbidden` when creating a secret (`POST /api/v1/secrets`).
 
 **Viewer token:** log in as `viewer@securevault.local` / `Viewer@123`. The viewer can list secrets (`GET /api/v1/secrets`), but receives `403 forbidden` on `POST .../access` and `POST /api/v1/secrets`.
+
+### Audit logs (Phase 6)
+
+Successful and failed login attempts generate audit rows (`action` `login`). Secret create/update/delete and simulated access are logged (`secret_*` actions). Entries describe **who did what**; they **do not** store plaintext secret values.
+
+After logging in and performing secret actions:
+
+```bash
+ADMIN_TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@securevault.local","password":"Admin@123"}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
+
+curl http://localhost:8080/api/v1/audit-logs \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+Optional limit (invalid or out-of-range values fall back to a default of 50 rows in the repository):
+
+```bash
+curl "http://localhost:8080/api/v1/audit-logs?limit=10" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+Developer must be forbidden:
+
+```bash
+DEV_TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"developer@securevault.local","password":"Dev@123"}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
+
+curl http://localhost:8080/api/v1/audit-logs \
+  -H "Authorization: Bearer $DEV_TOKEN"
+```
+
+Expected:
+
+```json
+{"error":"forbidden"}
+```
 
 Environment variables: see the root `.env.example`.

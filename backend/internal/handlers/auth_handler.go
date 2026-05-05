@@ -7,16 +7,19 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"securevault-cloudguard/backend/internal/auth"
+	"securevault-cloudguard/backend/internal/models"
 	"securevault-cloudguard/backend/internal/repository"
+	"securevault-cloudguard/backend/internal/services"
 )
 
 type AuthHandler struct {
 	users     *repository.UserRepository
 	jwtSecret string
+	audit     *services.AuditService
 }
 
-func NewAuthHandler(users *repository.UserRepository, jwtSecret string) *AuthHandler {
-	return &AuthHandler{users: users, jwtSecret: jwtSecret}
+func NewAuthHandler(users *repository.UserRepository, jwtSecret string, audit *services.AuditService) *AuthHandler {
+	return &AuthHandler{users: users, jwtSecret: jwtSecret, audit: audit}
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -32,6 +35,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	user, err := h.users.GetByEmail(req.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			h.audit.Log(models.CreateAuditLogRequest{
+				UserEmail:    req.Email,
+				Action:       "login",
+				ResourceType: "auth",
+				Status:       "failed",
+				IPAddress:    c.ClientIP(),
+				Message:      "invalid email or password",
+			})
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 			return
 		}
@@ -40,6 +51,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	if !auth.CheckPassword(req.Password, user.PasswordHash) {
+		h.audit.Log(models.CreateAuditLogRequest{
+			UserEmail:    req.Email,
+			Action:       "login",
+			ResourceType: "auth",
+			Status:       "failed",
+			IPAddress:    c.ClientIP(),
+			Message:      "invalid email or password",
+		})
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 		return
 	}
@@ -49,6 +68,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
 		return
 	}
+
+	userID := user.ID
+	h.audit.Log(models.CreateAuditLogRequest{
+		UserID:       &userID,
+		UserEmail:    user.Email,
+		Action:       "login",
+		ResourceType: "auth",
+		Status:       "success",
+		IPAddress:    c.ClientIP(),
+		Message:      "user logged in successfully",
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"token": token,

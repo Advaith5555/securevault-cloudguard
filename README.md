@@ -4,9 +4,11 @@ Cloud-native portfolio project oriented toward secrets access, RBAC, audit loggi
 
 ## Current status
 
-**Phase 5 — Secret Registry APIs:** The API stores secret **metadata** and a **`secret_ref`** (for example `local/demo/payment-api-key` or a future GCP secret path). List, get, create, update, and delete operate on metadata only. **Plaintext secret values are never returned** from these routes. `POST /api/v1/secrets/:id/access` marks `last_accessed_at` and returns a **safe demo payload** (simulated access) without exposing real secret material. RBAC applies: admin-only create/update/delete; admin and developer may call access; viewer may read metadata only.
+**Phase 6 — Audit logging:** The API writes rows to **`audit_logs`** for security-relevant actions (for example login success/failure and secret lifecycle events from Phase 5). **Audit entries do not store plaintext secret values**—they record metadata such as actor, action, resource type, optional resource ID, IP address, status, and a short message. Admins may list recent logs via **`GET /api/v1/audit-logs`** (optional `limit` query param).
 
-Still **planned** for later phases: policy engine APIs, audit logging, risk scanner, frontend, OpenAPI/Swagger, CI/CD, and cloud (GCP) deployment.
+Phase 5 behavior is unchanged: secret registry APIs expose **metadata** and **`secret_ref`** only; simulated access stays non-revealing.
+
+**Not implemented yet:** policy engine APIs, risk scanner, frontend, OpenAPI/Swagger, CI/CD, and cloud (GCP) deployment.
 
 ## Role permission matrix (planned product shape)
 
@@ -16,7 +18,7 @@ Still **planned** for later phases: policy engine APIs, audit logging, risk scan
 | **Developer** | Limited secret access (planned). |
 | **Viewer** | Metadata-only access (planned). |
 
-Phase 5 maps to this shape for the secret registry: viewer can list/get metadata; developer adds simulated access; admin can manage records.
+The secret registry and audit list align with this: viewer can read secret metadata only; audit log viewing is admin-only.
 
 ## Repository layout
 

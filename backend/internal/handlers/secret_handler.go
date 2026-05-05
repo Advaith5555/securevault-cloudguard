@@ -11,11 +11,12 @@ import (
 )
 
 type SecretHandler struct {
-	svc *services.SecretService
+	svc   *services.SecretService
+	audit *services.AuditService
 }
 
-func NewSecretHandler(svc *services.SecretService) *SecretHandler {
-	return &SecretHandler{svc: svc}
+func NewSecretHandler(svc *services.SecretService, audit *services.AuditService) *SecretHandler {
+	return &SecretHandler{svc: svc, audit: audit}
 }
 
 func (h *SecretHandler) Create(c *gin.Context) {
@@ -34,12 +35,26 @@ func (h *SecretHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	emailVal, _ := c.Get("email")
+	email, _ := emailVal.(string)
 
 	resp, err := h.svc.CreateSecret(req, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
 		return
 	}
+	rid := resp.ID
+	uid := userID
+	h.audit.Log(models.CreateAuditLogRequest{
+		UserID:       &uid,
+		UserEmail:    email,
+		Action:       "secret_created",
+		ResourceType: "secret",
+		ResourceID:   &rid,
+		Status:       "success",
+		IPAddress:    c.ClientIP(),
+		Message:      "secret metadata created",
+	})
 	c.JSON(http.StatusCreated, resp)
 }
 
@@ -83,6 +98,26 @@ func (h *SecretHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
 		return
 	}
+	idCopy := id
+	emailVal, _ := c.Get("email")
+	email, _ := emailVal.(string)
+	userVal, _ := c.Get("user_id")
+	userID, _ := userVal.(string)
+	var uidPtr *string
+	if userID != "" {
+		uid := userID
+		uidPtr = &uid
+	}
+	h.audit.Log(models.CreateAuditLogRequest{
+		UserID:       uidPtr,
+		UserEmail:    email,
+		Action:       "secret_updated",
+		ResourceType: "secret",
+		ResourceID:   &idCopy,
+		Status:       "success",
+		IPAddress:    c.ClientIP(),
+		Message:      "secret metadata updated",
+	})
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -96,6 +131,26 @@ func (h *SecretHandler) Delete(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
 		return
 	}
+	idCopy := id
+	emailVal, _ := c.Get("email")
+	email, _ := emailVal.(string)
+	userVal, _ := c.Get("user_id")
+	userID, _ := userVal.(string)
+	var uidPtr *string
+	if userID != "" {
+		uid := userID
+		uidPtr = &uid
+	}
+	h.audit.Log(models.CreateAuditLogRequest{
+		UserID:       uidPtr,
+		UserEmail:    email,
+		Action:       "secret_deleted",
+		ResourceType: "secret",
+		ResourceID:   &idCopy,
+		Status:       "success",
+		IPAddress:    c.ClientIP(),
+		Message:      "secret metadata deleted",
+	})
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 }
 
@@ -121,5 +176,25 @@ func (h *SecretHandler) Access(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
 		return
 	}
+	idCopy := id
+	emailVal, _ := c.Get("email")
+	email, _ := emailVal.(string)
+	userVal, _ := c.Get("user_id")
+	userID, _ := userVal.(string)
+	var uidPtr *string
+	if userID != "" {
+		uid := userID
+		uidPtr = &uid
+	}
+	h.audit.Log(models.CreateAuditLogRequest{
+		UserID:       uidPtr,
+		UserEmail:    email,
+		Action:       "secret_accessed",
+		ResourceType: "secret",
+		ResourceID:   &idCopy,
+		Status:       "success",
+		IPAddress:    c.ClientIP(),
+		Message:      "secret access simulated",
+	})
 	c.JSON(http.StatusOK, body)
 }

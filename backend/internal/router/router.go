@@ -40,9 +40,12 @@ func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
 
 	userRepo := repository.NewUserRepository(db)
 	secretRepo := repository.NewSecretRepository(db)
+	auditRepo := repository.NewAuditRepository(db)
+	auditSvc := services.NewAuditService(auditRepo)
 	secretSvc := services.NewSecretService(secretRepo)
-	secretHandler := handlers.NewSecretHandler(secretSvc)
-	authHandler := handlers.NewAuthHandler(userRepo, cfg.JWTSecret)
+	secretHandler := handlers.NewSecretHandler(secretSvc, auditSvc)
+	auditHandler := handlers.NewAuditHandler(auditSvc)
+	authHandler := handlers.NewAuthHandler(userRepo, cfg.JWTSecret, auditSvc)
 
 	v1 := r.Group("/api/v1")
 	authRoutes := v1.Group("/auth")
@@ -69,6 +72,10 @@ func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
 	secrets.PUT("/:id", auth.RequireRoles(auth.RoleAdmin), secretHandler.Update)
 	secrets.DELETE("/:id", auth.RequireRoles(auth.RoleAdmin), secretHandler.Delete)
 	secrets.POST("/:id/access", auth.RequireRoles(auth.RoleAdmin, auth.RoleDeveloper), secretHandler.Access)
+
+	auditLogs := v1.Group("/audit-logs")
+	auditLogs.Use(auth.AuthMiddleware(cfg.JWTSecret))
+	auditLogs.GET("", auth.RequireRoles(auth.RoleAdmin), auditHandler.List)
 
 	return r
 }
