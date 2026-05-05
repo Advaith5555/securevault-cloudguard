@@ -1,6 +1,6 @@
 # SecureVault CloudGuard — Backend
 
-Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), and Phase 4 RBAC middleware (test routes).
+Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC middleware (test routes), and Phase 5 Secret Registry APIs (metadata and `secret_ref` only; no plaintext secret values returned).
 
 ## Prerequisites
 
@@ -117,5 +117,51 @@ curl http://localhost:8080/api/v1/rbac/admin-check -H "Authorization: Bearer YOU
 curl http://localhost:8080/api/v1/rbac/developer-check -H "Authorization: Bearer YOUR_TOKEN"
 curl http://localhost:8080/api/v1/rbac/viewer-check -H "Authorization: Bearer YOUR_TOKEN"
 ```
+
+### Secret Registry (Phase 5)
+
+`environment` must be `dev`, `staging`, or `prod` (matches the database check constraint).
+
+Admin login token (reuse `$ADMIN_TOKEN` in the curls below):
+
+```bash
+ADMIN_TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@securevault.local","password":"Admin@123"}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
+```
+
+Create a secret:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/secrets \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "payment-api-key",
+    "environment": "dev",
+    "owner": "payments-team",
+    "service": "payment-service",
+    "secret_ref": "local/demo/payment-api-key"
+  }'
+```
+
+List secrets:
+
+```bash
+curl http://localhost:8080/api/v1/secrets \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+Replace `SECRET_ID` with an `id` from the create or list response. Access secret (simulated response; plaintext values are not returned):
+
+```bash
+curl -X POST http://localhost:8080/api/v1/secrets/SECRET_ID/access \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+**Developer token:** log in as `developer@securevault.local` / `Dev@123`. The developer can list secrets and call `POST .../access`, but receives `403 forbidden` when creating a secret (`POST /api/v1/secrets`).
+
+**Viewer token:** log in as `viewer@securevault.local` / `Viewer@123`. The viewer can list secrets (`GET /api/v1/secrets`), but receives `403 forbidden` on `POST .../access` and `POST /api/v1/secrets`.
 
 Environment variables: see the root `.env.example`.

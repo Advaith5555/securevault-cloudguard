@@ -10,6 +10,7 @@ import (
 	"securevault-cloudguard/backend/internal/config"
 	"securevault-cloudguard/backend/internal/handlers"
 	"securevault-cloudguard/backend/internal/repository"
+	"securevault-cloudguard/backend/internal/services"
 )
 
 func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
@@ -38,6 +39,9 @@ func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
 	})
 
 	userRepo := repository.NewUserRepository(db)
+	secretRepo := repository.NewSecretRepository(db)
+	secretSvc := services.NewSecretService(secretRepo)
+	secretHandler := handlers.NewSecretHandler(secretSvc)
 	authHandler := handlers.NewAuthHandler(userRepo, cfg.JWTSecret)
 
 	v1 := r.Group("/api/v1")
@@ -56,6 +60,15 @@ func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
 	rbac.GET("/viewer-check", auth.RequireRoles(auth.RoleAdmin, auth.RoleDeveloper, auth.RoleViewer), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "viewer access granted"})
 	})
+
+	secrets := v1.Group("/secrets")
+	secrets.Use(auth.AuthMiddleware(cfg.JWTSecret))
+	secrets.GET("", auth.RequireRoles(auth.RoleAdmin, auth.RoleDeveloper, auth.RoleViewer), secretHandler.List)
+	secrets.GET("/:id", auth.RequireRoles(auth.RoleAdmin, auth.RoleDeveloper, auth.RoleViewer), secretHandler.GetByID)
+	secrets.POST("", auth.RequireRoles(auth.RoleAdmin), secretHandler.Create)
+	secrets.PUT("/:id", auth.RequireRoles(auth.RoleAdmin), secretHandler.Update)
+	secrets.DELETE("/:id", auth.RequireRoles(auth.RoleAdmin), secretHandler.Delete)
+	secrets.POST("/:id/access", auth.RequireRoles(auth.RoleAdmin, auth.RoleDeveloper), secretHandler.Access)
 
 	return r
 }

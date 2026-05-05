@@ -4,7 +4,9 @@ Cloud-native portfolio project oriented toward secrets access, RBAC, audit loggi
 
 ## Current status
 
-**Phase 4 — RBAC middleware:** JWT auth from Phase 3 is unchanged. The API adds `RequireRoles` middleware and `/api/v1/rbac/*` test routes to verify admin, developer, and viewer access. There is still no secret registry API, policy engine, audit logging pipeline, risk scanner, frontend, CI/CD, or cloud deployment in this repo.
+**Phase 5 — Secret Registry APIs:** The API stores secret **metadata** and a **`secret_ref`** (for example `local/demo/payment-api-key` or a future GCP secret path). List, get, create, update, and delete operate on metadata only. **Plaintext secret values are never returned** from these routes. `POST /api/v1/secrets/:id/access` marks `last_accessed_at` and returns a **safe demo payload** (simulated access) without exposing real secret material. RBAC applies: admin-only create/update/delete; admin and developer may call access; viewer may read metadata only.
+
+Still **planned** for later phases: policy engine APIs, audit logging, risk scanner, frontend, OpenAPI/Swagger, CI/CD, and cloud (GCP) deployment.
 
 ## Role permission matrix (planned product shape)
 
@@ -14,20 +16,12 @@ Cloud-native portfolio project oriented toward secrets access, RBAC, audit loggi
 | **Developer** | Limited secret access (planned). |
 | **Viewer** | Metadata-only access (planned). |
 
-Today, only the RBAC test routes enforce these roles; resource APIs are not implemented yet.
+Phase 5 maps to this shape for the secret registry: viewer can list/get metadata; developer adds simulated access; admin can manage records.
 
 ## Repository layout
 
 - `docker-compose.yml` — local PostgreSQL only
 - `backend/` — Go HTTP API (`cmd/api` entrypoint), `database/sql` + `lib/pq`, auth and RBAC helpers, migrations under `internal/database/migrations/`
-
-## Planned (later phases)
-
-- Secrets registry and access APIs with RBAC enforcement
-- Policy engine APIs
-- Audit logging
-- Risk / misconfiguration scanning integrations
-- Frontend and operational tooling
 
 ## Quick start
 
