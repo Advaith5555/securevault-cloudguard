@@ -1,12 +1,13 @@
 # SecureVault CloudGuard
 
-A cloud-native secrets access, RBAC, audit logging, and risk scanning backend built with **Go**, **Gin**, **PostgreSQL**, **Docker Compose**, **JWT**, **OpenAPI**, and **GitHub Actions**.
+A cloud-native secrets access, RBAC, audit logging, and risk scanning backend built with **Go**, **Gin**, **PostgreSQL**, **Docker Compose**, **JWT**, **OpenAPI**, **GitHub Actions**, and a **Dockerfile** for the API.
 
 This is a **portfolio / learning project** I built step by step. It is **not** a deployed product serving real organizations, and there is **no hosted Cloud Run URL** in this README.
 
 ## Project status
 
-- **Backend MVP:** Feature set below is implemented and runnable locally with Docker Compose Postgres.
+- **Backend MVP:** Runnable locally with Docker Compose Postgres (**`go run ./cmd/api`** or **`docker build` / `docker run`**—see [`backend/README.md`](backend/README.md)).
+- **Docker image:** `backend/Dockerfile` builds **`securevault-api`**. **Cloud Run** stays optional—documented in [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md), **not deployed** here.
 - **Frontend:** Not built yet (no dashboard UI in this repo).
 - **Cloud Run:** Documented step-by-step in [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md)—I have **not** claimed a live deployment unless you complete those steps yourself in your own GCP account.
 - **Google Secret Manager:** Planned as a cloud improvement; **not** wired into the codebase today (`secret_ref` and simulated access are educational).
@@ -33,6 +34,7 @@ Topics this project practices in a small, local setting:
 ## Features implemented
 
 - [x] Go + Gin API
+- [x] **`Dockerfile`** for the backend (`backend/Dockerfile` → image **`securevault-api`**)
 - [x] PostgreSQL using Docker Compose
 - [x] JWT authentication
 - [x] Admin / Developer / Viewer RBAC
@@ -87,7 +89,7 @@ flowchart TB
 | **Backend** | Go 1.22+, Gin |
 | **Database** | PostgreSQL (local via Docker Compose) |
 | **Auth** | JWT (HS256), bcrypt password hashes |
-| **DevOps** | Docker Compose, GitHub Actions CI |
+| **DevOps** | Docker Compose, Docker image (`backend/Dockerfile`), GitHub Actions CI |
 | **Docs** | OpenAPI 3.0.3 (`backend/docs/openapi.yaml`), Markdown in `docs/` |
 | **Planned cloud** | Cloud Run, Artifact Registry, Cloud SQL, Secret Manager (see `docs/`) |
 
@@ -250,7 +252,7 @@ These documents are for **self-review**, **interview preparation**, and **planni
 - **Terraform** (or IaC of choice) for reproducible infra.
 - **Policy engine** beyond fixed roles (e.g. environment-scoped rules).
 - **Unit and integration tests** (including DB-backed tests where appropriate).
-- **Dockerfile + CI pipeline** to build/push images (still no deploy until you choose).
+- **GitHub Actions** pipeline to **build/push** Docker images (no deploy unless you add it).
 - **Cloud Monitoring** alerts and uptime checks once something is actually hosted.
 
 ## License

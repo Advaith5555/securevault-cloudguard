@@ -84,7 +84,7 @@ At a high level: **container image** to **Artifact Registry**, **Cloud Run** ser
 
 ### 14. What would you improve next?
 
-**Short term:** **unit tests**, a real **`Dockerfile`**, maybe **Swagger UI** behind auth if I want a browser contract. **Medium term:** **Secret Manager**, **Cloud SQL**, **Terraform**, CI **image build**. **Longer term:** **policy engine**, richer **per-resource** auth, **monitoring** and **alerting**. I’d also revisit **audit reliability** (queue, retries, metrics).
+**Short term:** **Unit tests**, **Swagger UI** or static contract hosting if you want browser-based exploration, **Docker image** CI build (push optional). **Medium term:** **Secret Manager**, **Cloud SQL**, **Terraform**, Artifact Registry automation. **Longer term:** **Policy engine**, richer **per-resource** auth, **monitoring** and **alerting**. I’d also revisit **audit reliability** (queue, retries, metrics).
 
 ---
 

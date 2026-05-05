@@ -1,0 +1,17 @@
+.git
+.github
+.gitignore
+README.md
+.env
+.env.*
+*.env
+securevault-api
+*.log
+*.tmp
+tmp/
+coverage.out
+coverage.html
+*.coverprofile
+node_modules
+.DS_Store
+Thumbs.db

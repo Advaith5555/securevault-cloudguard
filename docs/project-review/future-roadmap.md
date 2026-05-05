@@ -5,7 +5,7 @@ Honest backlog for this repository. Nothing here is committed work—prioritize 
 ## Short-term improvements
 
 - **Unit tests** — Handlers and services with **mocks** or small **sqlmock**-style tests; focus on auth, RBAC wiring, and risk rule evaluation without needing a live DB everywhere.
-- **Dockerfile for `backend/`** — Multi-stage build producing a small runnable image (this repo documents Cloud Run expectations but does not yet ship a `Dockerfile`).
+- **Dockerfile hardening (optional)** — Non-root user, image scanning, smaller base—`backend/Dockerfile` already covers a basic multi-stage build.
 - **Next.js dashboard** — Thin UI consuming **`GET /api/v1/dashboard/summary`**, secret list, risk list; keep auth as bearer token pasted or simple login form calling existing `/auth/login`.
 - **Swagger UI** — Optional route or small static wrapper that serves **Swagger UI** pointed at **`/openapi.yaml`** or a copied spec—only if you accept the operational cost; many teams rely on hosted Swagger Editor instead.
 

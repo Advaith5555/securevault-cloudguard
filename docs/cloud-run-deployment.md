@@ -81,33 +81,14 @@ gcloud auth configure-docker $REGION-docker.pkg.dev
 
 ---
 
-## Container image: Dockerfile prerequisite
+## Container image
 
-This repository **does not currently include** a `Dockerfile` under `backend/`. Before the build command below succeeds, **add** a Dockerfile (for example multi-stage build: compile Go binary, minimal runtime image) that listens on `$PORT` and runs `./cmd/api`.
+The repo includes **`backend/Dockerfile`**: a **multi-stage** build producing the **`securevault-api`** binary (`golang:1.22-alpine` builder, **Alpine 3.20** runtime with **ca-certificates**). Defaults: `PORT=8080`, `APP_ENV=production`; override env vars when you deploy.
 
-The following is **illustrative**—adjust base image versions and user permissions to match your org's standards:
-
-```dockerfile
-# Example only — validate before production use
-FROM golang:1.22-alpine AS build
-WORKDIR /src
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 go build -o /out/api ./cmd/api
-
-FROM gcr.io/distroless/static-debian12:nonroot
-WORKDIR /app
-COPY --from=build /out/api .
-USER nonroot:nonroot
-EXPOSE 8080
-ENV PORT=8080
-ENTRYPOINT ["/app/api"]
-```
-
-Commit the Dockerfile when you adopt container builds; until then **store it only locally** if you prefer.
+Use **that Dockerfile** with the **`docker build`** path below when publishing to Artifact Registry. For local runs against Postgres on your host port **5433**, see **`Running backend with Docker`** in [`backend/README.md`](../backend/README.md) (**`host.docker.internal`** notes).
 
 ---
+
 
 ## Build image from backend
 

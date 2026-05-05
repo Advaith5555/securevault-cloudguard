@@ -1,6 +1,6 @@
 # SecureVault CloudGuard — Backend
 
-Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC through Phase 8 dashboard summary, and Phase 9 OpenAPI specification (`backend/docs/openapi.yaml`). Swagger UI is not served by the binary; import the YAML into Swagger Editor, Postman, or Insomnia.
+Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC through Phase 8 dashboard summary, Phase 9 OpenAPI (`backend/docs/openapi.yaml`), and a **multi-stage Dockerfile** for container runs. Swagger UI is not served by the binary; import the YAML into Swagger Editor, Postman, or Insomnia.
 
 The backend is also validated in **GitHub Actions** on pushes and PRs to `main` (`gofmt`, `go vet`, `go test`, `go build`, OpenAPI file present)—see the root **Continuous integration** section.
 
@@ -8,7 +8,7 @@ The backend is also validated in **GitHub Actions** on pushes and PRs to `main` 
 
 The API is a good fit to run as a **stateless HTTP container** on **Google Cloud Run**, with **Cloud SQL** replacing Docker Compose Postgres for production-style setups. Optional step-by-step guidance (Artifact Registry, `gcloud run deploy`, cleanup) is in **[../docs/cloud-run-deployment.md](../docs/cloud-run-deployment.md)**. Architecture context: **[../docs/architecture.md](../docs/architecture.md)**; env vars and secrets: **[../docs/environment-variables.md](../docs/environment-variables.md)**.
 
-This repo **does not ship** a `Dockerfile` yet—the deployment doc explains that you add one before `docker build`. **Local development** still assumes **Docker Compose** for PostgreSQL (`docker-compose.yml` at the repo root).
+A multi-stage **`Dockerfile`** lives in this directory for building the **`securevault-api`** image. [**Running backend with Docker**](#running-backend-with-docker) covers local use; **[`../docs/cloud-run-deployment.md`](../docs/cloud-run-deployment.md)** describes pushing that image for optional Cloud Run deploy. **Local development** can still use **`go run`** and **Docker Compose** for PostgreSQL at the repo root.
 
 ## Prerequisites
 
@@ -49,6 +49,29 @@ go run ./cmd/api
 ```
 
 The server listens on port `8080` by default (override with `PORT`). Set `DATABASE_URL` and `JWT_SECRET` as needed (see root `.env.example`).
+
+## Running backend with Docker
+
+Build the image from the **repository root** (build context is `./backend`):
+
+```bash
+docker build -t securevault-api ./backend
+```
+
+With **Postgres already running** via Docker Compose on your host (mapped to host port **5433**), run the API container pointed at the host:
+
+```bash
+docker run --rm \
+  --env DATABASE_URL="postgres://securevault_user:securevault_password@host.docker.internal:5433/securevault_db?sslmode=disable" \
+  --env JWT_SECRET="development-secret-key" \
+  --env APP_ENV="development" \
+  -p 8080:8080 \
+  securevault-api
+```
+
+**`host.docker.internal`** lets the container reach services bound on your **host** machine. Because Compose exposes Postgres as **`localhost:5433`**, the URL uses **`host.docker.internal:5433`** from inside the app container.
+
+This pattern is for **local development only** (Docker Desktop on macOS/Windows supports `host.docker.internal` by default; on some Linux setups you may need **`--add-host=host.docker.internal:host-gateway`** on `docker run` or another host address). **Do not** rely on `localhost` inside the container to mean “Postgres on my laptop.”
 
 ## Test
 
