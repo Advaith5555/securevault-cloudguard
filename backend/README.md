@@ -2,6 +2,8 @@
 
 Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC through Phase 8 dashboard summary, and Phase 9 OpenAPI specification (`backend/docs/openapi.yaml`). Swagger UI is not served by the binary; import the YAML into Swagger Editor, Postman, or Insomnia.
 
+The backend is also validated in **GitHub Actions** on pushes and PRs to `main` (`gofmt`, `go vet`, `go test`, `go build`, OpenAPI file present)—see the root **Continuous integration** section.
+
 ## Prerequisites
 
 - Go 1.22+
