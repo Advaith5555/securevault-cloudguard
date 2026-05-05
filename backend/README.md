@@ -2,7 +2,7 @@
 
 Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC through Phase 8 dashboard summary, Phase 9 OpenAPI (`backend/docs/openapi.yaml`), and a **multi-stage Dockerfile** for container runs. Swagger UI is not served by the binary; import the YAML into Swagger Editor, Postman, or Insomnia.
 
-The backend is also validated in **GitHub Actions** on pushes and PRs to `main` (`gofmt`, `go vet`, `go test`, `go build`, OpenAPI file present)—see the root **Continuous integration** section.
+The backend is also validated in **GitHub Actions** on pushes and PRs to `main` (`gofmt`, `go vet`, `go test`, `go build`, OpenAPI file present)—see the root **Continuous integration** section. Automated tests are **unit-only** in `internal/auth` and **do not require PostgreSQL** (see [Unit tests](#unit-tests) below).
 
 ## Cloud Deployment Notes
 
@@ -49,6 +49,16 @@ go run ./cmd/api
 ```
 
 The server listens on port `8080` by default (override with `PORT`). Set `DATABASE_URL` and `JWT_SECRET` as needed (see root `.env.example`).
+
+## Unit tests
+
+From this `backend/` directory:
+
+```bash
+go test ./...
+```
+
+These are **unit tests** for **password checks**, **JWT issue/validate**, **role validation**, and **`RequireRoles`** middleware (see `internal/auth/*_test.go`). They use **no database** and need **no environment variables**—suitable for CI and local runs without Docker Postgres.
 
 ## Running backend with Docker
 
