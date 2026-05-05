@@ -1,50 +1,252 @@
 # SecureVault CloudGuard
 
-Cloud-native portfolio project oriented toward secrets access, RBAC, audit logging, and risk scanning for Cloud Engineer / DevSecOps roles.
+A cloud-native secrets access, RBAC, audit logging, and risk scanning backend built with **Go**, **Gin**, **PostgreSQL**, **Docker Compose**, **JWT**, **OpenAPI**, and **GitHub Actions**.
 
-## Current status
+This is a **portfolio / learning project** I built step by step. It is **not** a deployed product serving real organizations, and there is **no hosted Cloud Run URL** in this README.
 
-**Phase 11 — Cloud Run documentation:** Optional **deployment guidance** for Google **Cloud Run**, **Artifact Registry**, **Cloud SQL**, **Secret Manager**, and related operations lives under **`docs/`**. This is **not** an automated deploy: **no Cloud Run service is created by this repo**, and **there is no maintained production URL** unless you run the steps yourself.
+## Project status
 
-**Phase 10 — Continuous integration:** GitHub Actions runs **`SecureVault CloudGuard CI`** on **push** and **pull requests** to **`main`**: `go mod download`, **`gofmt`** (no drift), **`go vet`**, **`go test ./...`**, **`go build`** for `./cmd/api`, and a check that **`backend/docs/openapi.yaml`** exists. **No PostgreSQL service, no deployment, no secrets** in this workflow.
+- **Backend MVP:** Feature set below is implemented and runnable locally with Docker Compose Postgres.
+- **Frontend:** Not built yet (no dashboard UI in this repo).
+- **Cloud Run:** Documented step-by-step in [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md)—I have **not** claimed a live deployment unless you complete those steps yourself in your own GCP account.
+- **Google Secret Manager:** Planned as a cloud improvement; **not** wired into the codebase today (`secret_ref` and simulated access are educational).
 
-**Phase 9 — OpenAPI documentation:** Machine-readable API description is maintained at **`backend/docs/openapi.yaml`** (OpenAPI 3.0.3): health, auth, RBAC probes, secrets, audit logs, risk scan/list, and dashboard summary. **Swagger UI is not served by the application**—import the spec into [Swagger Editor](https://editor.swagger.io), Postman, or Insomnia and point requests at **`http://localhost:8080`** when the API is running locally.
+## Why I built this
 
-Prior phases remain in place for the Gin backend (secrets metadata and `secret_ref` only—no plaintext values in simulated access responses), audit logging, risk scanning, and dashboard summary.
+I built SecureVault CloudGuard to get hands-on with **cloud-style backend engineering**: how APIs separate **authentication** from **authorization**, how **IAM-style RBAC** might map onto HTTP routes, and how **DevSecOps-minded** touches—**audit trails**, **risk signals over metadata**, and **clear API contracts**—fit together. I wanted something I could run locally, reason about in interviews, and honestly describe as **student-built but serious**, not corporate marketing.
 
-**Still planned:** policy engine APIs, frontend UI. **CI does not deploy.** **Cloud Run** is **documented** in Phase 11 but **not executed** for you.
+## DALAVE / Cloud DevSecOps alignment
 
-## Documentation
+How this project lines up with topics I care about in cloud and DevSecOps:
 
-| Doc | What it covers |
-|-----|----------------|
-| [docs/architecture.md](docs/architecture.md) | Overview, local vs planned GCP architecture (Mermaid diagrams), honest scope |
-| [docs/environment-variables.md](docs/environment-variables.md) | `PORT`, `APP_ENV`, `DATABASE_URL`, `JWT_SECRET`, security notes |
-| [docs/cloud-run-deployment.md](docs/cloud-run-deployment.md) | Step-by-step Cloud Run + Artifact Registry guide (optional; includes prerequisites and cleanup) |
+- **GCP / Cloud Run deployment planning** — optional guide; Artifact Registry, Cloud SQL, Secret Manager called out as next steps.
+- **IAM-style RBAC** — JWT claims + middleware: admin / developer / viewer with different route access.
+- **Secret Manager–style design** — metadata + `secret_ref` in the model; real secret values are not returned; cloud secret store is the natural extension.
+- **Cloud security governance** — thinking in terms of who can create secrets, who can “access” (simulated), and what gets logged.
+- **Audit logging** — persist security-relevant actions to `audit_logs` (login, secret lifecycle, risk scan).
+- **Risk scanner** — rule-based findings from **metadata only** (no plaintext secrets).
+- **API documentation** — OpenAPI 3 spec for clients and tools.
+- **CI checks** — format, vet, test, build, spec file present on every push/PR to `main`.
+- **Docker + PostgreSQL** — local database via Compose; production would move to managed SQL.
 
-Deploying to GCP is **your choice**: follow the guide only when you are ready; otherwise treat it as reference material only.
+## Features implemented
+
+- [x] Go + Gin API
+- [x] PostgreSQL using Docker Compose
+- [x] JWT authentication
+- [x] Admin / Developer / Viewer RBAC
+- [x] Secret metadata registry (`secret_ref`; no plaintext in list/detail)
+- [x] Controlled **simulated** secret access endpoint (demo response only)
+- [x] Audit logging (Postgres)
+- [x] Risk scanner (metadata-only rules; persisted findings)
+- [x] Dashboard summary API (counts + recent audit rows)
+- [x] OpenAPI documentation (`backend/docs/openapi.yaml`)
+- [x] GitHub Actions CI
+- [x] Cloud Run deployment **documentation** (not automated deploy)
+
+## Not implemented yet / honest limitations
+
+- No **frontend** dashboard yet.
+- No **Google Secret Manager** integration in code.
+- No **production SSO / OAuth** (email + password demo users only).
+- No **live Cloud Run URL** from this project as-shipped.
+- No **policy engine** beyond **role-based** route checks (no per-resource policy API).
+- No **automated** Docker build + push + deploy pipeline in GitHub Actions.
+- **Local demo database** only unless you deploy Postgres (e.g. Cloud SQL) and run migrations yourself.
+
+## Architecture summary
+
+```mermaid
+flowchart TB
+  Client([User / API client])
+  API[Go Gin API]
+  DB[(PostgreSQL)]
+  JWT[JWT auth]
+  RBAC[RBAC middleware]
+  Audit[(Audit logs)]
+  Risk[Risk scanner]
+  OAS[OpenAPI spec]
+  GH[GitHub]
+  CI[GitHub Actions CI]
+
+  Client --> API
+  API --> DB
+  API --> JWT
+  API --> RBAC
+  API --> Audit
+  API --> Risk
+  API -. spec only .-> OAS
+  GH --> CI
+```
+
+## Tech stack
+
+| Area | Choice |
+|------|--------|
+| **Backend** | Go 1.22+, Gin |
+| **Database** | PostgreSQL (local via Docker Compose) |
+| **Auth** | JWT (HS256), bcrypt password hashes |
+| **DevOps** | Docker Compose, GitHub Actions CI |
+| **Docs** | OpenAPI 3.0.3 (`backend/docs/openapi.yaml`), Markdown in `docs/` |
+| **Planned cloud** | Cloud Run, Artifact Registry, Cloud SQL, Secret Manager (see `docs/`) |
+
+## API overview
+
+Base URL (local): `http://localhost:8080`
+
+| Path | Role |
+|------|------|
+| `GET /health` | Public |
+| `GET /health/db` | Public |
+| `POST /api/v1/auth/login` | Public |
+| `GET /api/v1/auth/me` | Authenticated |
+| `GET /api/v1/secrets` | Authenticated (list metadata) |
+| `POST /api/v1/secrets` | **Admin** (create) |
+| `GET /api/v1/secrets/{id}` | Authenticated |
+| `PUT /api/v1/secrets/{id}` | **Admin** |
+| `DELETE /api/v1/secrets/{id}` | **Admin** |
+| `POST /api/v1/secrets/{id}/access` | **Admin / Developer** (simulated access) |
+| `GET /api/v1/audit-logs` | **Admin** |
+| `GET /api/v1/risks` | Authenticated |
+| `POST /api/v1/risks/scan` | **Admin** |
+| `GET /api/v1/dashboard/summary` | Authenticated |
+
+RBAC probe routes under `/api/v1/rbac/*` and full request/response schemas are in **[`backend/docs/openapi.yaml`](backend/docs/openapi.yaml)** (import into Swagger Editor / Postman; the app does not serve Swagger UI).
+
+## Local setup
+
+1. **Clone** this repository.
+2. Start **Docker Desktop** (or equivalent) so Compose can run.
+3. From the repo root:
+
+   ```bash
+   docker compose up -d
+   ```
+
+4. Run **migrations** (schema + seed users):
+
+   ```bash
+   docker exec -i securevault-postgres psql -U securevault_user -d securevault_db < backend/internal/database/migrations/001_init.sql
+   docker exec -i securevault-postgres psql -U securevault_user -d securevault_db < backend/internal/database/migrations/002_seed_users.sql
+   ```
+
+5. Start the API:
+
+   ```bash
+   cd backend
+   go mod tidy
+   go run ./cmd/api
+   ```
+
+Environment variables: see [`.env.example`](.env.example) and [`docs/environment-variables.md`](docs/environment-variables.md). More backend detail: [`backend/README.md`](backend/README.md).
+
+## Demo users
+
+| Name | Email | Password | Role |
+|------|-------|----------|------|
+| Admin User | admin@securevault.local | `Admin@123` | admin |
+| Developer User | developer@securevault.local | `Dev@123` | developer |
+| Viewer User | viewer@securevault.local | `Viewer@123` | viewer |
+
+**These credentials are for local development only.** Do not reuse them in any real environment.
+
+## Quick API test commands
+
+```bash
+# Login as admin and capture token
+export TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@securevault.local","password":"Admin@123"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+
+curl -s http://localhost:8080/health
+
+# Create secret metadata (admin)
+curl -s -X POST http://localhost:8080/api/v1/secrets \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"demo-key","environment":"dev","owner":"me","service":"api","secret_ref":"local/demo/demo-key"}'
+
+# Risk scan (admin)
+curl -s -X POST http://localhost:8080/api/v1/risks/scan \
+  -H "Authorization: Bearer $TOKEN"
+
+# Audit logs (admin)
+curl -s "http://localhost:8080/api/v1/audit-logs?limit=5" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Dashboard summary
+curl -s http://localhost:8080/api/v1/dashboard/summary \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## Security design (as implemented)
+
+- **Passwords:** Stored as **bcrypt** hashes in Postgres (demo users from seed migration).
+- **JWT:** Stateless bearer tokens for API access after login.
+- **RBAC:** Middleware enforces **admin / developer / viewer** differences on routes (not a full enterprise IAM product).
+- **Secrets:** Only **metadata** and **`secret_ref`** are stored and returned in normal CRUD; **plaintext secret values are not exposed**; the access route returns a **simulated** payload for learning.
+- **Audit logs:** Persist actions like login and secret mutations for investigation-style practice.
+- **Risk scanner:** Evaluates **metadata only** (e.g. missing owner, prod without owner); no secret material.
+- **Configuration:** Local dev uses env vars from `.env` (never commit real secrets); in cloud, **`JWT_SECRET` and `DATABASE_URL` belong in Secret Manager** (see [`docs/environment-variables.md`](docs/environment-variables.md)).
 
 ## Continuous integration
 
-The workflow lives at **`.github/workflows/ci.yml`**. On every **push** or **pull request** targeting **`main`**, it validates the **backend** with Go **formatting**, **`go vet`**, **tests**, **build**, and confirms the **OpenAPI** file is present. It does **not** start Postgres, run integration tests against a database, build container images, or publish anywhere.
+Workflow: **[`.github/workflows/ci.yml`](.github/workflows/ci.yml)** (runs on push and PRs to **`main`**).
 
-## Role permission matrix (planned product shape)
+Checks:
 
-| Role | Intended access |
-|------|-----------------|
-| **Admin** | Full platform control (planned). |
-| **Developer** | Limited secret access (planned). |
-| **Viewer** | Metadata-only access (planned). |
+- **`gofmt`** (must be clean)
+- **`go vet ./...`**
+- **`go test ./...`**
+- **`go build`** for `./cmd/api`
+- **OpenAPI file exists:** `backend/docs/openapi.yaml`
 
-The secret registry, risk list, dashboard summary, and audit log list (admin-only) map to this direction where applicable.
+No database service in CI, no image publish, no deploy.
 
-## Repository layout
+## Documentation links
 
-- `.github/workflows/ci.yml` — GitHub Actions CI (backend formatting, vet, test, build; OpenAPI file check)
-- `docs/` — Architecture, environment variables, optional **Cloud Run deployment** guide (not executed automatically)
-- `docker-compose.yml` — local PostgreSQL only
-- `backend/` — Go HTTP API (`cmd/api` entrypoint), `database/sql` + `lib/pq`, auth and RBAC helpers, migrations under `internal/database/migrations/`, OpenAPI spec under `backend/docs/`
+| Resource | Description |
+|----------|-------------|
+| [`backend/docs/openapi.yaml`](backend/docs/openapi.yaml) | Full OpenAPI contract |
+| [`docs/architecture.md`](docs/architecture.md) | Local vs planned GCP diagrams |
+| [`docs/environment-variables.md`](docs/environment-variables.md) | Env vars & safety notes |
+| [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md) | Optional Cloud Run walkthrough |
 
-## Quick start
+## How I would explain this in an interview
 
-See `backend/README.md` for Docker Compose, migrations, seed data, `go run ./cmd/api`, `curl` examples, OpenAPI workflow, CI checks, and deployment notes. Optional GCP steps: [docs/cloud-run-deployment.md](docs/cloud-run-deployment.md).
+> “SecureVault CloudGuard is a **cloud-security-focused backend** I built to learn how systems handle **secret metadata**, **JWT auth**, **role-based route access**, **audit trails**, and **lightweight risk checks**—all without pretending the secret *values* live in this API. I used **Go and Gin**, **Postgres**, and **Docker Compose** locally, added **OpenAPI** and **GitHub Actions CI**, and wrote **deployment notes for Cloud Run** so I understand what would change in a real cloud account. It’s a **portfolio piece**: honest about what’s simulated and what would come next, like a **frontend** and **Secret Manager**.”
+
+## What I learned
+
+- Go module layout and a small **clean architecture** split (handlers, services, repositories).
+- **Gin** routing, JSON binding, and middleware chains.
+- **PostgreSQL** schema + SQL migrations with `database/sql`.
+- **Docker Compose** for a dev database.
+- **JWT** issuance/validation and **bcrypt** for passwords.
+- **RBAC** enforcement at the HTTP layer.
+- **Audit logging** that does not break the main flow on insert failure (MVP choice).
+- **Risk rules** over metadata and persisting findings.
+- **OpenAPI** as the contract for tools and teammates.
+- **GitHub Actions** for repeatable quality gates.
+- Reading **Cloud Run / Artifact Registry** docs and turning them into a **checklist** for future me.
+
+## Resume bullets (honest)
+
+- Built a **Go (Gin) REST API** with **JWT authentication**, **role-based access control** (admin/developer/viewer), and **PostgreSQL** persistence for users, secret **metadata**, audit logs, and risk findings.
+- Implemented **audit logging** for auth and secret lifecycle events and a **metadata-only risk scanner** with persisted results and an admin **dashboard summary** endpoint.
+- Documented the API in **OpenAPI 3**, added **GitHub Actions CI** (`gofmt`, `vet`, `test`, `build`), and wrote **Google Cloud Run / Secret Manager–aware deployment notes** without claiming a production deployment.
+
+## Future improvements
+
+- **Next.js** (or similar) dashboard consuming the summary + list APIs.
+- **Google Secret Manager** (and Cloud SQL) integrated for real cloud secrets and DB connectivity.
+- **Terraform** (or IaC of choice) for reproducible infra.
+- **Policy engine** beyond fixed roles (e.g. environment-scoped rules).
+- **Unit and integration tests** (including DB-backed tests where appropriate).
+- **Dockerfile + CI pipeline** to build/push images (still no deploy until you choose).
+- **Cloud Monitoring** alerts and uptime checks once something is actually hosted.
+
+## License
+
+**License to be added** (e.g. MIT)—this repo does not yet include a `LICENSE` file.
