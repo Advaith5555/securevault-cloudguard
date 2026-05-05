@@ -1,6 +1,10 @@
 # Deploying SecureVault CloudGuard Backend to Google Cloud Run
 
-This guide walks through **building a container image** and **deploying it to Cloud Run** with related Google Cloud services. It is **documentation only**: **this repository is not deployed on your behalf.** Unless you complete these steps yourself in your own GCP project, **there is no live Cloud Run URL** from this doc.
+This guide walks through **building a container image** and **deploying it to Cloud Run** with related Google Cloud services. It is **optional / alternative documentation** for GCP.
+
+For a **live HTTPS demo**, this project uses **Render** instead (see **[`render-deployment.md`](render-deployment.md)**). Cloud Run was **not** used for that iteration because the **GCP project available at the time needed billing enabled to turn on required APIs**—keeping this guide for a future or parallel path when that is an option.
+
+Completing these steps is **your responsibility**; **no Cloud Run URL exists** from this document alone.
 
 ---
 

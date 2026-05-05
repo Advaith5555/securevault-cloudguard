@@ -2,14 +2,15 @@
 
 A cloud-native secrets access, RBAC, audit logging, and risk scanning backend built with **Go**, **Gin**, **PostgreSQL**, **Docker Compose**, **JWT**, **OpenAPI**, **GitHub Actions**, and a **Dockerfile** for the API.
 
-This is a **portfolio / learning project** I built step by step. It is **not** a deployed product serving real organizations, and there is **no hosted Cloud Run URL** in this README.
+This is a **portfolio / learning project** I built step by step. **It is not a production product.** The backend is **also deployed on Render** for demonstration: **`https://securevault-api-5t61.onrender.com`** ([`docs/render-deployment.md`](docs/render-deployment.md)). No **frontend** is deployed with this README.
 
 ## Project status
 
-- **Backend MVP:** Runnable locally with Docker Compose Postgres (**`go run ./cmd/api`** or **`docker build` / `docker run`**—see [`backend/README.md`](backend/README.md)).
-- **Docker image:** `backend/Dockerfile` builds **`securevault-api`**. **Cloud Run** stays optional—documented in [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md), **not deployed** here.
-- **Frontend:** Not built yet (no dashboard UI in this repo).
-- **Cloud Run:** Documented step-by-step in [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md)—I have **not** claimed a live deployment unless you complete those steps yourself in your own GCP account.
+- **Backend MVP:** Runnable locally (Docker Compose + `go run`)—see [`backend/README.md`](backend/README.md)—or **`docker build`**. **Live demo:** [`https://securevault-api-5t61.onrender.com`](https://securevault-api-5t61.onrender.com) (**Render**, portfolio use only; details in [`docs/render-deployment.md`](docs/render-deployment.md)).
+- **Docker image:** `backend/Dockerfile` builds **`securevault-api`**.
+- **Live database (Render demo):** **Render PostgreSQL**; **`001_init.sql`** and **`002_seed_users.sql`** were applied manually using the dashboard’s external DB access (**no connection strings in this repo**).
+- **Frontend:** Not built or deployed yet.
+- **GCP / Cloud Run:** Documented as a **future or alternative path** in [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md)—that GCP project needed **billing to enable APIs**, so Render was chosen for this live milestone.
 - **Google Secret Manager:** Planned as a cloud improvement; **not** wired into the codebase today (`secret_ref` and simulated access are educational).
 - **Final review / interview prep:** Markdown in [`docs/project-review/`](docs/project-review/) (checklist, talking points, Q&A, roadmap)—see **Final review package** below.
 
@@ -21,7 +22,7 @@ I built SecureVault CloudGuard to get hands-on with **cloud-style backend engine
 
 Topics this project practices in a small, local setting:
 
-- **GCP / Cloud Run deployment planning** — optional guide; Artifact Registry, Cloud SQL, Secret Manager called out as next steps.
+- **GCP / Cloud Run deployment planning** — optional guide when billing/API access is available; **Render** is what runs the current live demo ([`docs/render-deployment.md`](docs/render-deployment.md)).
 - **IAM-style RBAC** — JWT claims + middleware: admin / developer / viewer with different route access.
 - **Secret Manager–style design** — metadata + `secret_ref` in the model; real secret values are not returned; cloud secret store is the natural extension.
 - **Cloud security governance** — thinking in terms of who can create secrets, who can “access” (simulated), and what gets logged.
@@ -44,18 +45,19 @@ Topics this project practices in a small, local setting:
 - [x] Risk scanner (metadata-only rules; persisted findings)
 - [x] Dashboard summary API (counts + recent audit rows)
 - [x] OpenAPI documentation (`backend/docs/openapi.yaml`)
-- [x] GitHub Actions CI
-- [x] Cloud Run deployment **documentation** (not automated deploy)
+- [x] **Live backend on Render** (HTTPS demo—not production SLA)
+- [x] Cloud Run deployment **documentation** (**alternative/future path**; not used for current live demo)
 
 ## Not implemented yet / honest limitations
 
-- No **frontend** dashboard yet.
+- No **frontend** dashboard or frontend hosting yet.
+- **Hosted Render instance** is a **portfolio smoke-test tier**: possible **cold starts**, **demo users**, **not** audited for production workloads.
 - No **Google Secret Manager** integration in code.
-- No **production SSO / OAuth** (email + password demo users only).
-- No **live Cloud Run URL** from this project as-shipped.
+- No **production SSO / OAuth** (email + password demo users only—even on Render, until you replace them).
+- **GCP Cloud Run:** not deployed for this milestone (APIs required **billing** on the GCP project used); [**`docs/cloud-run-deployment.md`**](docs/cloud-run-deployment.md) stays the reference for later.
 - No **policy engine** beyond **role-based** route checks (no per-resource policy API).
-- No **automated** Docker build + push + deploy pipeline in GitHub Actions.
-- **Local demo database** only unless you deploy Postgres (e.g. Cloud SQL) and run migrations yourself.
+- No **automated** Docker deploy pipeline in GitHub Actions.
+- Locally you still rely on **Docker Compose** Postgres unless you repoint **`DATABASE_URL`** yourself.
 
 ## Architecture summary
 
@@ -87,15 +89,19 @@ flowchart TB
 | Area | Choice |
 |------|--------|
 | **Backend** | Go 1.22+, Gin |
-| **Database** | PostgreSQL (local via Docker Compose) |
+| **Database** | PostgreSQL (local Docker Compose; **Render Postgres** for the live demo) |
+| **Deployed demo** | [Render Web Service](https://securevault-api-5t61.onrender.com) + Render PostgreSQL ([`docs/render-deployment.md`](docs/render-deployment.md)) |
 | **Auth** | JWT (HS256), bcrypt password hashes |
 | **DevOps** | Docker Compose, Docker image (`backend/Dockerfile`), GitHub Actions CI |
-| **Docs** | OpenAPI 3.0.3 (`backend/docs/openapi.yaml`), Markdown in `docs/` |
-| **Planned cloud** | Cloud Run, Artifact Registry, Cloud SQL, Secret Manager (see `docs/`) |
+| **Docs** | OpenAPI 3.0.3 (`backend/docs/openapi.yaml`), Markdown in `docs/` ([**Render**](docs/render-deployment.md), [**Cloud Run**](docs/cloud-run-deployment.md) notes) |
+| **GCP (alternative)** | Cloud Run guide when billing/APIs are enabled—see **`docs/cloud-run-deployment.md`** |
 
 ## API overview
 
-Base URL (local): `http://localhost:8080`
+Base URLs:
+
+- **Local:** `http://localhost:8080`
+- **Render (portfolio demo):** `https://securevault-api-5t61.onrender.com`
 
 | Path | Role |
 |------|------|
@@ -151,12 +157,23 @@ Environment variables: see [`.env.example`](.env.example) and [`docs/environment
 | Developer User | developer@securevault.local | `Dev@123` | developer |
 | Viewer User | viewer@securevault.local | `Viewer@123` | viewer |
 
-**These credentials are for local development only.** Do not reuse them in any real environment.
+**These accounts are seeded locally and on Render for demos only—not for production reuse.** Prefer rotating them if you extend the deployed instance.
 
-## Quick API test commands
+### Render demo (HTTPS)
+
+After cold start, sanity checks (**no secrets pasted here**):
 
 ```bash
-# Login as admin and capture token
+curl -s https://securevault-api-5t61.onrender.com/health
+curl -s https://securevault-api-5t61.onrender.com/health/db
+curl -s -X POST https://securevault-api-5t61.onrender.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@securevault.local","password":"Admin@123"}'
+```
+
+## Quick API test commands (localhost)
+
+```bash
 export TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@securevault.local","password":"Admin@123"}' \
@@ -191,7 +208,7 @@ curl -s http://localhost:8080/api/v1/dashboard/summary \
 - **Secrets:** Only **metadata** and **`secret_ref`** are stored and returned in normal CRUD; **plaintext secret values are not exposed**; the access route returns a **simulated** payload for learning.
 - **Audit logs:** Persist actions like login and secret mutations for investigation-style practice.
 - **Risk scanner:** Evaluates **metadata only** (e.g. missing owner, prod without owner); no secret material.
-- **Configuration:** Local dev uses env vars from `.env` (never commit real secrets); in cloud, **`JWT_SECRET` and `DATABASE_URL` belong in Secret Manager** (see [`docs/environment-variables.md`](docs/environment-variables.md)).
+- **Configuration:** Local dev uses `.env` / `.env.example` (**never commit** real secrets). The **Render** service uses **`DATABASE_URL`** and **`JWT_SECRET`** configured **only** in Render’s dashboard ([`docs/render-deployment.md`](docs/render-deployment.md)). A stricter setup would mirror **Secret Manager–style** secret stores for clouds other than local demos.
 
 ## Continuous integration
 
@@ -214,7 +231,8 @@ No database service in CI, no image publish, no deploy.
 | [`backend/docs/openapi.yaml`](backend/docs/openapi.yaml) | Full OpenAPI contract |
 | [`docs/architecture.md`](docs/architecture.md) | Local vs planned GCP diagrams |
 | [`docs/environment-variables.md`](docs/environment-variables.md) | Env vars & safety notes |
-| [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md) | Optional Cloud Run walkthrough |
+| [`docs/render-deployment.md`](docs/render-deployment.md) | Live **Render** deployment (portfolio demo HTTPS + Postgres migrations) |
+| [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md) | Optional **GCP Cloud Run** walkthrough (alternative when billing/APIs enabled) |
 
 ## Final review package
 
@@ -229,11 +247,12 @@ These documents are for **self-review**, **interview preparation**, and **planni
 
 ## How I would explain this in an interview
 
-> “SecureVault CloudGuard is a **cloud-security-focused backend** I built to learn how systems handle **secret metadata**, **JWT auth**, **role-based route access**, **audit trails**, and **lightweight risk checks**—all without pretending the secret *values* live in this API. I used **Go and Gin**, **Postgres**, and **Docker Compose** locally, added **OpenAPI** and **GitHub Actions CI**, and wrote **deployment notes for Cloud Run** so I understand what would change in a real cloud account. It’s a **portfolio piece**: honest about what’s simulated and what would come next, like a **frontend** and **Secret Manager**.”
+> “SecureVault CloudGuard is a **cloud-security-focused backend** I built to practice **secret metadata**, **JWT auth**, **RBAC middleware**, **audit trails**, and a **metadata-only risk scanner**—honest about **simulated secret access**. I ran it locally with **Postgres via Docker Compose**, shipped a **portfolio HTTPS instance on Render**, and wrote **GCP Cloud Run notes as an alternate path** when **billing/API access** wasn't the right choice for my GCP sandbox. Still no **frontend**—that’s deliberate scope.”
 
 ## What I learned
 
 - Go module layout and a small **clean architecture** split (handlers, services, repositories).
+- Deploying **Go + Dockerfile** behind **HTTPS** on **Render** and wiring **managed Postgres** (portfolio demo tier).
 - **Gin** routing, JSON binding, and middleware chains.
 - **PostgreSQL** schema + SQL migrations with `database/sql`.
 - **Docker Compose** for a dev database.
