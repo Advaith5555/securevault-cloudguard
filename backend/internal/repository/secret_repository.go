@@ -66,6 +66,10 @@ func (r *SecretRepository) List() ([]models.Secret, error) {
 	return list, rows.Err()
 }
 
+func (r *SecretRepository) ListForRiskScan() ([]models.Secret, error) {
+	return r.List()
+}
+
 func (r *SecretRepository) GetByID(id string) (*models.Secret, error) {
 	row := r.db.QueryRow(
 		`SELECT id, name, environment, owner, service, secret_ref, created_by, created_at, updated_at, last_accessed_at, expires_at

@@ -4,11 +4,11 @@ Cloud-native portfolio project oriented toward secrets access, RBAC, audit loggi
 
 ## Current status
 
-**Phase 6 — Audit logging:** The API writes rows to **`audit_logs`** for security-relevant actions (for example login success/failure and secret lifecycle events from Phase 5). **Audit entries do not store plaintext secret values**—they record metadata such as actor, action, resource type, optional resource ID, IP address, status, and a short message. Admins may list recent logs via **`GET /api/v1/audit-logs`** (optional `limit` query param).
+**Phase 7 — Risk scanner:** Admins can run **`POST /api/v1/risks/scan`** to evaluate registered secrets using **metadata only** (owner, service, environment, timestamps, expiry). Results are stored in **`risk_findings`**; previous rows are cleared each run. **Plaintext secret values are never analyzed or exposed.** All authenticated roles may **`GET /api/v1/risks`**; only admins may trigger a scan. Scan completion is recorded in audit logs (`risk_scan_executed`).
 
-Phase 5 behavior is unchanged: secret registry APIs expose **metadata** and **`secret_ref`** only; simulated access stays non-revealing.
+Phase 6 audit logging and Phase 5 secret registry behaviors are unchanged.
 
-**Not implemented yet:** policy engine APIs, risk scanner, frontend, OpenAPI/Swagger, CI/CD, and cloud (GCP) deployment.
+**Not implemented yet:** policy engine APIs, frontend, OpenAPI/Swagger, CI/CD, and cloud (GCP) deployment.
 
 ## Role permission matrix (planned product shape)
 
@@ -18,7 +18,7 @@ Phase 5 behavior is unchanged: secret registry APIs expose **metadata** and **`s
 | **Developer** | Limited secret access (planned). |
 | **Viewer** | Metadata-only access (planned). |
 
-The secret registry and audit list align with this: viewer can read secret metadata only; audit log viewing is admin-only.
+The secret registry, audit log list (admin-only), and risk list (all roles) align with this direction; risk scan execution is admin-only.
 
 ## Repository layout
 

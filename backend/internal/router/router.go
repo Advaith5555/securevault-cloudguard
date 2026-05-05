@@ -41,9 +41,12 @@ func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
 	userRepo := repository.NewUserRepository(db)
 	secretRepo := repository.NewSecretRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
+	riskRepo := repository.NewRiskRepository(db)
 	auditSvc := services.NewAuditService(auditRepo)
 	secretSvc := services.NewSecretService(secretRepo)
+	riskSvc := services.NewRiskService(secretRepo, riskRepo, auditSvc)
 	secretHandler := handlers.NewSecretHandler(secretSvc, auditSvc)
+	riskHandler := handlers.NewRiskHandler(riskSvc)
 	auditHandler := handlers.NewAuditHandler(auditSvc)
 	authHandler := handlers.NewAuthHandler(userRepo, cfg.JWTSecret, auditSvc)
 
@@ -76,6 +79,11 @@ func SetupRouter(cfg config.Config, db *sql.DB) *gin.Engine {
 	auditLogs := v1.Group("/audit-logs")
 	auditLogs.Use(auth.AuthMiddleware(cfg.JWTSecret))
 	auditLogs.GET("", auth.RequireRoles(auth.RoleAdmin), auditHandler.List)
+
+	risks := v1.Group("/risks")
+	risks.Use(auth.AuthMiddleware(cfg.JWTSecret))
+	risks.POST("/scan", auth.RequireRoles(auth.RoleAdmin), riskHandler.Scan)
+	risks.GET("", auth.RequireRoles(auth.RoleAdmin, auth.RoleDeveloper, auth.RoleViewer), riskHandler.List)
 
 	return r
 }

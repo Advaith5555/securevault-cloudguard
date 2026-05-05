@@ -1,6 +1,6 @@
 # SecureVault CloudGuard — Backend
 
-Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC middleware (test routes), Phase 5 Secret Registry APIs (metadata and `secret_ref` only), and Phase 6 audit logging (admin-only `/api/v1/audit-logs`; no plaintext secret values in audit records).
+Go API with Gin, PostgreSQL, health checks, JWT authentication (demo users), Phase 4 RBAC, Phase 5 Secret Registry (metadata and `secret_ref` only), Phase 6 audit logging, and Phase 7 risk scanning (metadata-only rules, persisted in `risk_findings`).
 
 ## Prerequisites
 
@@ -203,6 +203,76 @@ Expected:
 
 ```json
 {"error":"forbidden"}
+```
+
+### Risk scanner (Phase 7)
+
+The scanner reads **registered secret metadata only** (no plaintext values). Each run **clears** `risk_findings` and inserts fresh rows. Ordering on `GET /api/v1/risks` is **high**, then **medium**, then **low**, then **`created_at` DESC**.
+
+Admin token:
+
+```bash
+ADMIN_TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@securevault.local","password":"Admin@123"}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
+```
+
+Create a risky test secret:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/secrets \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "prod-orphan-secret",
+    "environment": "prod",
+    "owner": "",
+    "service": "",
+    "secret_ref": "local/demo/prod-orphan-secret"
+  }'
+```
+
+Run risk scan:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/risks/scan \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+List risks:
+
+```bash
+curl http://localhost:8080/api/v1/risks \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+Developer can list risks but cannot scan:
+
+```bash
+DEV_TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"developer@securevault.local","password":"Dev@123"}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
+
+curl http://localhost:8080/api/v1/risks \
+  -H "Authorization: Bearer $DEV_TOKEN"
+
+curl -X POST http://localhost:8080/api/v1/risks/scan \
+  -H "Authorization: Bearer $DEV_TOKEN"
+```
+
+Expected:
+
+```json
+{"error":"forbidden"}
+```
+
+Check audit logs for the scan:
+
+```bash
+curl "http://localhost:8080/api/v1/audit-logs?limit=5" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 Environment variables: see the root `.env.example`.
