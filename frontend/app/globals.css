@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 2 6 23;
+  --card: 15 23 42;
+  --border: 51 65 85;
+  --accent: 34 211 238;
+}
+
+body {
+  @apply min-h-screen bg-slate-950 text-slate-100 antialiased;
+}
+
+:focus-visible {
+  @apply outline outline-2 outline-offset-2 outline-cyan-500/80;
+}
