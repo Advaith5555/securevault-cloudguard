@@ -10,14 +10,15 @@ This is a **portfolio / learning project** I built step by step. It is **not** a
 - **Frontend:** Not built yet (no dashboard UI in this repo).
 - **Cloud Run:** Documented step-by-step in [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md)—I have **not** claimed a live deployment unless you complete those steps yourself in your own GCP account.
 - **Google Secret Manager:** Planned as a cloud improvement; **not** wired into the codebase today (`secret_ref` and simulated access are educational).
+- **Final review / interview prep:** Markdown in [`docs/project-review/`](docs/project-review/) (checklist, talking points, Q&A, roadmap)—see **Final review package** below.
 
 ## Why I built this
 
 I built SecureVault CloudGuard to get hands-on with **cloud-style backend engineering**: how APIs separate **authentication** from **authorization**, how **IAM-style RBAC** might map onto HTTP routes, and how **DevSecOps-minded** touches—**audit trails**, **risk signals over metadata**, and **clear API contracts**—fit together. I wanted something I could run locally, reason about in interviews, and honestly describe as **student-built but serious**, not corporate marketing.
 
-## DALAVE / Cloud DevSecOps alignment
+## Cloud DevSecOps alignment
 
-How this project lines up with topics I care about in cloud and DevSecOps:
+Topics this project practices in a small, local setting:
 
 - **GCP / Cloud Run deployment planning** — optional guide; Artifact Registry, Cloud SQL, Secret Manager called out as next steps.
 - **IAM-style RBAC** — JWT claims + middleware: admin / developer / viewer with different route access.
@@ -213,6 +214,17 @@ No database service in CI, no image publish, no deploy.
 | [`docs/environment-variables.md`](docs/environment-variables.md) | Env vars & safety notes |
 | [`docs/cloud-run-deployment.md`](docs/cloud-run-deployment.md) | Optional Cloud Run walkthrough |
 
+## Final review package
+
+These documents are for **self-review**, **interview preparation**, and **planning improvements**—not part of the running API:
+
+| Doc | Purpose |
+|-----|---------|
+| [`docs/project-review/final-checklist.md`](docs/project-review/final-checklist.md) | Pre-demo / pre-share checklist (local, API, security, docs, CI) |
+| [`docs/project-review/interview-notes.md`](docs/project-review/interview-notes.md) | Timed explanations and themes in first person |
+| [`docs/project-review/interview-questions.md`](docs/project-review/interview-questions.md) | Fifteen likely Q&A answers tied to this repo |
+| [`docs/project-review/future-roadmap.md`](docs/project-review/future-roadmap.md) | Short / medium / long backlog |
+
 ## How I would explain this in an interview
 
 > “SecureVault CloudGuard is a **cloud-security-focused backend** I built to learn how systems handle **secret metadata**, **JWT auth**, **role-based route access**, **audit trails**, and **lightweight risk checks**—all without pretending the secret *values* live in this API. I used **Go and Gin**, **Postgres**, and **Docker Compose** locally, added **OpenAPI** and **GitHub Actions CI**, and wrote **deployment notes for Cloud Run** so I understand what would change in a real cloud account. It’s a **portfolio piece**: honest about what’s simulated and what would come next, like a **frontend** and **Secret Manager**.”
@@ -230,12 +242,6 @@ No database service in CI, no image publish, no deploy.
 - **OpenAPI** as the contract for tools and teammates.
 - **GitHub Actions** for repeatable quality gates.
 - Reading **Cloud Run / Artifact Registry** docs and turning them into a **checklist** for future me.
-
-## Resume bullets (honest)
-
-- Built a **Go (Gin) REST API** with **JWT authentication**, **role-based access control** (admin/developer/viewer), and **PostgreSQL** persistence for users, secret **metadata**, audit logs, and risk findings.
-- Implemented **audit logging** for auth and secret lifecycle events and a **metadata-only risk scanner** with persisted results and an admin **dashboard summary** endpoint.
-- Documented the API in **OpenAPI 3**, added **GitHub Actions CI** (`gofmt`, `vet`, `test`, `build`), and wrote **Google Cloud Run / Secret Manager–aware deployment notes** without claiming a production deployment.
 
 ## Future improvements
 
