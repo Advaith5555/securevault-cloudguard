@@ -299,4 +299,4 @@ These documents are for **self-review**, **interview preparation**, and **planni
 
 ## License
 
-**License to be added** (e.g. MIT)—this repo does not yet include a `LICENSE` file.
+**License to be added** 
