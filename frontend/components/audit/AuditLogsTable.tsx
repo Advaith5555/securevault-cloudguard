@@ -5,7 +5,31 @@ import type { AuditLog } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableShell } from "@/components/ui/TableShell";
-import { formatDate, shortId } from "@/lib/format";
+import { actionLabel, formatDate, shortId } from "@/lib/format";
+
+type ActionCategory = "auth" | "mutation" | "risk" | "read" | "system";
+
+function actionCategory(action: string): ActionCategory {
+  if (action === "login") return "auth";
+  if (
+    action === "secret_created" ||
+    action === "secret_updated" ||
+    action === "secret_deleted"
+  )
+    return "mutation";
+  if (action === "secret_accessed") return "read";
+  if (action.startsWith("risk_")) return "risk";
+  return "system";
+}
+
+const CATEGORY_CLS: Record<ActionCategory, string> = {
+  auth: "bg-sky-500/15 text-sky-300 ring-1 ring-inset ring-sky-500/35",
+  mutation:
+    "bg-amber-500/15 text-amber-200 ring-1 ring-inset ring-amber-500/35",
+  risk: "bg-rose-500/15 text-rose-300 ring-1 ring-inset ring-rose-500/40",
+  read: "bg-slate-500/15 text-slate-300 ring-1 ring-inset ring-slate-500/30",
+  system: "bg-slate-500/15 text-slate-300 ring-1 ring-inset ring-slate-500/30",
+};
 
 interface AuditLogsTableProps {
   logs: AuditLog[];
@@ -31,8 +55,8 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
   if (logs.length === 0) {
     return (
       <EmptyState
-        title="No audit entries"
-        description="Activity will appear after logins and protected API calls. Admins see the widest feed."
+        title="No audit activity recorded yet."
+        description="Security and operational events will appear here."
       />
     );
   }
@@ -93,8 +117,17 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
             <tbody className="divide-y divide-slate-800">
               {filtered.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-900/50">
-                  <td className="px-4 py-3 font-mono text-xs text-slate-300">
-                    {row.action}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${CATEGORY_CLS[actionCategory(row.action)]}`}
+                      >
+                        {actionCategory(row.action)}
+                      </span>
+                      <span className="text-xs text-slate-300">
+                        {actionLabel(row.action)}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <Badge kind="status" value={row.status} />

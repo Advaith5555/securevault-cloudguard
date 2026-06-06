@@ -5,6 +5,7 @@ import { AuditLogsTable } from "@/components/audit/AuditLogsTable";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState, TableSkeletonRows } from "@/components/ui/LoadingState";
 import { ApiError, getAuditLogs } from "@/lib/api";
+import { actionLabel, timeAgo } from "@/lib/format";
 import type { AuditLog } from "@/lib/types";
 
 export default function AuditLogsPage() {
@@ -74,8 +75,59 @@ export default function AuditLogsPage() {
     );
   }
 
+  const latestLog = logs && logs.length > 0 ? logs[0] : null;
+
   return (
     <div className="space-y-6">
+      {/* Summary header */}
+      <div>
+        <h2 className="text-sm font-semibold text-slate-200">
+          Recent Security Activity
+        </h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Latest security and operational events across the platform.
+        </p>
+      </div>
+
+      {/* Summary cards */}
+      {logs ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Total Events
+            </p>
+            <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-50">
+              {logs.length}
+            </p>
+          </div>
+          <div className="rounded-xl border border-cyan-500/25 bg-slate-900/60 p-5 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Latest Event
+            </p>
+            {latestLog ? (
+              <>
+                <p className="mt-2 truncate font-mono text-sm font-medium text-slate-100">
+                  {latestLog.action}
+                </p>
+                <p className="mt-1 truncate text-xs text-slate-400">
+                  {actionLabel(latestLog.action)}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500">—</p>
+            )}
+          </div>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Last Activity
+            </p>
+            <p className="mt-2 text-2xl font-semibold text-slate-50">
+              {latestLog ? timeAgo(latestLog.created_at) : "—"}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       <p className="max-w-3xl text-sm text-slate-400">
         Immutable-style trail sourced from Postgres through the audit API.
         Filter locally for demos; authoritative retention policies live on the
