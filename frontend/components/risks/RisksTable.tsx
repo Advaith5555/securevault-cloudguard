@@ -9,9 +9,10 @@ import { formatDate, shortId } from "@/lib/format";
 
 interface RisksTableProps {
   risks: RiskFinding[];
+  onScan?: () => void;
 }
 
-export function RisksTable({ risks }: RisksTableProps) {
+export function RisksTable({ risks, onScan }: RisksTableProps) {
   const [q, setQ] = useState("");
   const [level, setLevel] = useState<"all" | "high" | "medium" | "low">(
     "all"
@@ -32,10 +33,24 @@ export function RisksTable({ risks }: RisksTableProps) {
 
   if (risks.length === 0) {
     return (
-      <EmptyState
-        title="No risk findings"
-        description="Run an admin-triggered scan on the API to populate findings. Rules only inspect metadata—never raw secret material."
-      />
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-900/40 px-8 py-16 text-center">
+        <div className="mb-3 h-12 w-12 rounded-lg border border-slate-700 bg-slate-800/60" />
+        <p className="text-sm font-medium text-slate-200">
+          No Active Risk Findings
+        </p>
+        <p className="mt-2 max-w-md text-sm text-slate-400">
+          Run a metadata security scan to evaluate the current secret registry
+          posture.
+        </p>
+        {onScan ? (
+          <button
+            onClick={onScan}
+            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-cyan-500"
+          >
+            Run Risk Scan
+          </button>
+        ) : null}
+      </div>
     );
   }
 
@@ -101,22 +116,22 @@ export function RisksTable({ risks }: RisksTableProps) {
             <tbody className="divide-y divide-slate-800">
               {filtered.map((r) => (
                 <tr key={r.id} className="hover:bg-slate-900/50">
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <Badge kind="risk" value={r.risk_level} />
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-slate-300">
+                  <td className="px-4 py-3.5 font-mono text-xs font-medium text-slate-300">
                     {r.risk_type}
                   </td>
-                  <td className="max-w-xs px-4 py-3 text-slate-300">
+                  <td className="max-w-xs px-4 py-3.5 font-medium text-slate-200">
                     {r.description}
                   </td>
-                  <td className="max-w-xs px-4 py-3 text-slate-400">
+                  <td className="max-w-xs px-4 py-3.5 text-slate-400">
                     {r.recommendation}
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-slate-400">
+                  <td className="px-4 py-3.5 font-mono text-xs text-slate-400">
                     {shortId(r.secret_id, 12)}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-500">
+                  <td className="whitespace-nowrap px-4 py-3.5 text-slate-500">
                     {formatDate(r.created_at)}
                   </td>
                 </tr>

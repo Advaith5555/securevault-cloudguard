@@ -58,8 +58,7 @@ export default function RisksPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-3xl text-sm text-slate-400">
-          Findings are produced from metadata-only rules. Tune ownership,
-          environments, and expiry in the registry to reduce noise over time.
+          Automatically generated security findings based on registry metadata.
         </p>
         <div className="flex flex-shrink-0 items-center gap-3">
           {scanStatus === "success" ? (
@@ -95,7 +94,9 @@ export default function RisksPage() {
       {error ? (
         <ErrorState message={error} onRetry={() => void load()} />
       ) : null}
-      {risks && !loading ? <RisksTable risks={risks} /> : null}
+      {risks && !loading ? (
+        <RisksTable risks={risks} onScan={() => void handleScan()} />
+      ) : null}
     </div>
   );
 }

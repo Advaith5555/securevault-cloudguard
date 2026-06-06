@@ -8,7 +8,7 @@ import { SecurityPosture } from "@/components/dashboard/SecurityPosture";
 import { SummaryCards } from "@/components/dashboard/SummaryCards";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { LoadingState } from "@/components/ui/LoadingState";
+import { CardGridSkeleton, LoadingState } from "@/components/ui/LoadingState";
 import { ApiError, getDashboardSummary } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import type { DashboardSummary } from "@/lib/types";
@@ -49,6 +49,21 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Welcome banner */}
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-base font-semibold text-slate-100">
+            SecureVault CloudGuard
+          </p>
+          <p className="mt-0.5 text-sm text-slate-400">
+            Cloud-native secret governance and DevSecOps visibility platform.
+          </p>
+        </div>
+        <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-300">
+          Demo Environment
+        </span>
+      </div>
+
       {user && user.role !== "admin" ? (
         <p className="rounded-lg border border-slate-800 bg-slate-900/40 px-4 py-3 text-sm text-slate-400">
           <span className="font-medium text-slate-300">
@@ -61,7 +76,7 @@ export default function DashboardPage() {
         </p>
       ) : null}
 
-      {loading ? <LoadingState message="Loading dashboard summary…" /> : null}
+      {loading ? <CardGridSkeleton /> : null}
       {error ? (
         <ErrorState message={error} onRetry={() => void load()} />
       ) : null}

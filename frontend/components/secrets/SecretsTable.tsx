@@ -29,8 +29,8 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
   if (secrets.length === 0) {
     return (
       <EmptyState
-        title="No secrets in registry"
-        description="Authenticate and ensure the backend has seeded metadata. Plaintext secret values never appear here—only references and stewardship fields."
+        title="Secret Registry Ready"
+        description="Secret metadata entries will appear here as teams onboard services and register managed credentials."
       />
     );
   }
@@ -93,25 +93,25 @@ export function SecretsTable({ secrets }: SecretsTableProps) {
             <tbody className="divide-y divide-slate-800">
               {filtered.map((s) => (
                 <tr key={s.id} className="hover:bg-slate-900/50">
-                  <td className="px-4 py-3 font-medium text-slate-200">
+                  <td className="px-4 py-3.5 font-semibold text-slate-100">
                     {s.name}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <Badge kind="environment" value={s.environment} />
                   </td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="px-4 py-3.5 text-slate-300">
                     {s.owner || "—"}
                   </td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="px-4 py-3.5 text-slate-300">
                     {s.service || "—"}
                   </td>
-                  <td className="max-w-[200px] truncate px-4 py-3 font-mono text-xs text-cyan-200/90">
+                  <td className="max-w-[200px] truncate px-4 py-3.5 font-mono text-xs text-cyan-200/90">
                     {s.secret_ref}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-400">
+                  <td className="whitespace-nowrap px-4 py-3.5 text-slate-400">
                     {formatDate(s.last_accessed_at ?? undefined)}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-500">
+                  <td className="whitespace-nowrap px-4 py-3.5 text-slate-500">
                     {formatDate(s.created_at)}
                   </td>
                 </tr>

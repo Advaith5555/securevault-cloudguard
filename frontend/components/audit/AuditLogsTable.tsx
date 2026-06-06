@@ -117,30 +117,30 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
             <tbody className="divide-y divide-slate-800">
               {filtered.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-900/50">
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2">
                       <span
                         className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${CATEGORY_CLS[actionCategory(row.action)]}`}
                       >
                         {actionCategory(row.action)}
                       </span>
-                      <span className="text-xs text-slate-300">
+                      <span className="text-xs font-medium text-slate-200">
                         {actionLabel(row.action)}
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <Badge kind="status" value={row.status} />
                   </td>
-                  <td className="px-4 py-3 text-slate-300">{row.user_email}</td>
-                  <td className="px-4 py-3 text-slate-400">{row.resource_type}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-slate-500">
+                  <td className="px-4 py-3.5 text-slate-300">{row.user_email}</td>
+                  <td className="px-4 py-3.5 text-slate-400">{row.resource_type}</td>
+                  <td className="px-4 py-3.5 font-mono text-xs text-slate-500">
                     {row.resource_id ? shortId(row.resource_id, 12) : "—"}
                   </td>
-                  <td className="max-w-sm px-4 py-3 text-slate-400">
+                  <td className="max-w-sm px-4 py-3.5 text-slate-400">
                     {row.message}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-500">
+                  <td className="whitespace-nowrap px-4 py-3.5 text-slate-500">
                     {formatDate(row.created_at)}
                   </td>
                 </tr>

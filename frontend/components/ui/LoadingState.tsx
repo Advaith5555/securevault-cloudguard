@@ -31,3 +31,24 @@ export function TableSkeletonRows({ rows = 5 }: { rows?: number }) {
     </div>
   );
 }
+
+export function CardGridSkeleton({ count = 7 }: { count?: number }) {
+  return (
+    <div
+      className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      role="status"
+      aria-busy="true"
+    >
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-slate-800 bg-slate-900/60 p-5"
+        >
+          <div className="h-2.5 w-1/2 animate-pulse rounded bg-slate-800" />
+          <div className="mt-4 h-8 w-1/3 animate-pulse rounded bg-slate-800/80" />
+          <div className="mt-3 h-2.5 w-2/3 animate-pulse rounded bg-slate-800/60" />
+        </div>
+      ))}
+    </div>
+  );
+}

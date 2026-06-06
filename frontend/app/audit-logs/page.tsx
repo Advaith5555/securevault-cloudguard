@@ -129,9 +129,7 @@ export default function AuditLogsPage() {
       ) : null}
 
       <p className="max-w-3xl text-sm text-slate-400">
-        Immutable-style trail sourced from Postgres through the audit API.
-        Filter locally for demos; authoritative retention policies live on the
-        server.
+        Chronological record of authentication and registry activity.
       </p>
       {logs ? <AuditLogsTable logs={logs} /> : null}
     </div>

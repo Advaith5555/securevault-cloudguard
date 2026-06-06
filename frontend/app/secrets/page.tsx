@@ -38,9 +38,7 @@ export default function SecretsPage() {
   return (
     <div className="space-y-6">
       <p className="max-w-3xl text-sm text-slate-400">
-        Registry entries describe stewardship and references—never live secret
-        payloads. Admin roles can mutate records through the API; this UI
-        focuses on read-only oversight.
+        Central registry of managed secret metadata and ownership.
       </p>
       {loading ? (
         <>
