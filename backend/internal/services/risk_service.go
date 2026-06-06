@@ -9,14 +9,22 @@ import (
 )
 
 const (
-	riskTypeMissingOwner     = "missing_owner"
-	riskTypeMissingService   = "missing_service"
+	// HIGH
 	riskTypeProdMissingOwner = "prod_secret_missing_owner"
-	riskTypeStaleSecret      = "stale_secret"
-	riskTypeExpiredSecret    = "expired_secret"
-	riskLevelLow             = "low"
-	riskLevelMedium          = "medium"
-	riskLevelHigh            = "high"
+	riskTypeMissingSecretRef = "missing_secret_ref"
+	// MEDIUM
+	riskTypeNoExpiry      = "no_expiry"
+	riskTypeLongLivedProd = "long_lived_prod_secret"
+	// LOW
+	riskTypeMissingService = "missing_service"
+	riskTypeStaleDevSecret = "stale_dev_secret"
+
+	riskLevelLow    = "low"
+	riskLevelMedium = "medium"
+	riskLevelHigh   = "high"
+
+	prodAgeCutoffDays = 180
+	devAgeCutoffDays  = 365
 )
 
 type RiskService struct {
@@ -36,58 +44,82 @@ func (s *RiskService) Scan(userID string, userEmail string, ipAddress string) ([
 	}
 
 	now := time.Now()
-	cutoff := now.Add(-90 * 24 * time.Hour)
+	prodCutoff := now.AddDate(0, 0, -prodAgeCutoffDays)
+	devCutoff := now.AddDate(0, 0, -devAgeCutoffDays)
+
 	var findings []models.RiskFinding
 
 	for i := range secrets {
 		sec := &secrets[i]
 		ownerEmpty := strings.TrimSpace(sec.Owner) == ""
 		serviceEmpty := strings.TrimSpace(sec.Service) == ""
+		refEmpty := strings.TrimSpace(sec.SecretRef) == ""
 		isProd := strings.EqualFold(sec.Environment, "prod")
+		isDev := strings.EqualFold(sec.Environment, "dev")
 
-		if ownerEmpty {
-			findings = append(findings, models.RiskFinding{
-				SecretID:       sec.ID,
-				RiskType:       riskTypeMissingOwner,
-				RiskLevel:      riskLevelMedium,
-				Description:    "Secret does not have an assigned owner",
-				Recommendation: "Assign a responsible owner or team for accountability",
-			})
-		}
-		if serviceEmpty {
-			findings = append(findings, models.RiskFinding{
-				SecretID:       sec.ID,
-				RiskType:       riskTypeMissingService,
-				RiskLevel:      riskLevelLow,
-				Description:    "Secret is not linked to a service",
-				Recommendation: "Associate the secret with a service to improve traceability",
-			})
-		}
+		// HIGH — production secret has no owner
 		if isProd && ownerEmpty {
 			findings = append(findings, models.RiskFinding{
 				SecretID:       sec.ID,
 				RiskType:       riskTypeProdMissingOwner,
 				RiskLevel:      riskLevelHigh,
-				Description:    "Production secret has no owner",
-				Recommendation: "Assign an owner immediately for production secret governance",
+				Description:    "Production secrets must have a responsible owner.",
+				Recommendation: "Assign an owning team before production use.",
 			})
 		}
-		if sec.CreatedAt.Before(cutoff) {
+
+		// HIGH — secret_ref not linked to an external vault
+		if refEmpty {
 			findings = append(findings, models.RiskFinding{
 				SecretID:       sec.ID,
-				RiskType:       riskTypeStaleSecret,
-				RiskLevel:      riskLevelMedium,
-				Description:    "Secret is older than 90 days",
-				Recommendation: "Review and rotate this secret if it is still active",
-			})
-		}
-		if sec.ExpiresAt != nil && sec.ExpiresAt.Before(now) {
-			findings = append(findings, models.RiskFinding{
-				SecretID:       sec.ID,
-				RiskType:       riskTypeExpiredSecret,
+				RiskType:       riskTypeMissingSecretRef,
 				RiskLevel:      riskLevelHigh,
-				Description:    "Secret expiry date has already passed",
-				Recommendation: "Rotate or remove the expired secret",
+				Description:    "Secret is not linked to an external secret manager.",
+				Recommendation: "Store the credential in Vault, AWS Secrets Manager, or similar.",
+			})
+		}
+
+		// MEDIUM — no expiry / rotation schedule configured
+		if sec.ExpiresAt == nil {
+			findings = append(findings, models.RiskFinding{
+				SecretID:       sec.ID,
+				RiskType:       riskTypeNoExpiry,
+				RiskLevel:      riskLevelMedium,
+				Description:    "Rotation schedule is not configured.",
+				Recommendation: "Define a rotation policy.",
+			})
+		}
+
+		// MEDIUM — production secret older than 180 days
+		if isProd && sec.CreatedAt.Before(prodCutoff) {
+			findings = append(findings, models.RiskFinding{
+				SecretID:       sec.ID,
+				RiskType:       riskTypeLongLivedProd,
+				RiskLevel:      riskLevelMedium,
+				Description:    "Secret has existed for an extended period.",
+				Recommendation: "Rotate and reissue the credential.",
+			})
+		}
+
+		// LOW — service tag missing
+		if serviceEmpty {
+			findings = append(findings, models.RiskFinding{
+				SecretID:       sec.ID,
+				RiskType:       riskTypeMissingService,
+				RiskLevel:      riskLevelLow,
+				Description:    "Associated service is not documented.",
+				Recommendation: "Add a service owner tag.",
+			})
+		}
+
+		// LOW — development secret older than 365 days
+		if isDev && sec.CreatedAt.Before(devCutoff) {
+			findings = append(findings, models.RiskFinding{
+				SecretID:       sec.ID,
+				RiskType:       riskTypeStaleDevSecret,
+				RiskLevel:      riskLevelLow,
+				Description:    "Development credential appears inactive.",
+				Recommendation: "Review whether it can be removed.",
 			})
 		}
 	}
@@ -103,11 +135,11 @@ func (s *RiskService) Scan(userID string, userEmail string, ipAddress string) ([
 	s.audit.Log(models.CreateAuditLogRequest{
 		UserID:       &uid,
 		UserEmail:    userEmail,
-		Action:       "risk_scan_executed",
+		Action:       "risk_scan_completed",
 		ResourceType: "risk",
 		Status:       "success",
 		IPAddress:    ipAddress,
-		Message:      "risk scan completed",
+		Message:      "Metadata risk scan executed successfully.",
 	})
 
 	return s.ListRisks()

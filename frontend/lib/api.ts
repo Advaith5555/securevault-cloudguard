@@ -103,6 +103,16 @@ export async function getRisks(): Promise<RiskFinding[]> {
   return apiFetch<RiskFinding[]>("/api/v1/risks");
 }
 
+export async function runRiskScan(): Promise<{
+  message: string;
+  findings: RiskFinding[];
+}> {
+  return apiFetch<{ message: string; findings: RiskFinding[] }>(
+    "/api/v1/risks/scan",
+    { method: "POST" }
+  );
+}
+
 export async function getAuditLogs(limit = 50): Promise<AuditLog[]> {
   const q = limit > 0 ? `?limit=${encodeURIComponent(String(limit))}` : "";
   return apiFetch<AuditLog[]>(`/api/v1/audit-logs${q}`);
